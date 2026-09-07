@@ -118,3 +118,10 @@ cd vela-src
 16. **实验室（Labs）菜单项隐藏**：`browser.preferences.experimental.hidden` pref 会被 firefoxLabs.mjs 的 Nimbus 配方逻辑无视并改写（有可用配方即强制显示）。根治 = `distribution/policies.json` 的 `DisableFirefoxLabs: true`（官方企业策略），已固化进 install-langpack.sh（mach build 会清 dist，该脚本每次重写）。
 17. **profile 内 distro langpack 不随 dist 更新**：distribution 扩展机制是一次性安装（首启装入 profile 后，dist 里 xpi 更新不会同步到已装版本）——文案类改进对旧 profile 无效。dev 验收遇"文案还是旧的"：删 `obj-*/tmp/profile-default` 重建即装新版。"Mozilla 产品"菜单与实验室同源（Nimbus），已用 `DisableMoreFromMozilla` 策略一并禁用。
 18. **品牌零残留基线（2026-09-07）**：l10n-rebrand.sh 升级为四词替换（Firefox/Mozilla/Nightly/火狐→Vela，跳过 URL/MPL 许可证名/注释行）+ app brand.ftl 的 product-name/vendor-name 修正。终扫显示层（ftl/properties/dtd 非注释非 URL）= 0 处。coverage.json 里的字符串 ID 属元数据不显示。已知残余风险：zh-CN 缺翻译时回退英文原文（含 Firefox），遇一处点杀一处（补 zh-CN 覆盖或改 en-US 源）。
+
+### M3 鼠标手势（2026-09-07）
+
+- 架构：`browser/base/content/vela-gestures.js`（chrome 侧，window.messageManager 注册）+ data-URL frame script（内容进程捕获鼠标，多进程下内容事件不冒泡到 chrome 的标准解法）；注册点 = `jar.mn` 文件清单 + `global-scripts.js` loadSubScript（三处都已 overlay 收编）。
+- 手势表：←后退 →前进 ↓关闭 ↑↓刷新 ↓→恢复标签；轨迹靛青 polyline。
+- 坑：window 脚本的 `Services` 是精简版——`Services.ppmm` 不存在、`resource://gre/modules/Services.sys.mjs` 不存在（esr153 Services 为全局注入）；正解 = `window.messageManager`（loadFrameScript + addMessageListener 均在 window 域）。
+- **操作纪律：在 vela-src 目录跑 git 命令前先确认 cwd**——vela-src 的 git 是 Mozilla 上游仓库，误 commit 后 `git reset HEAD~1` 撤销（2026-09-07 实际发生过，push 被上游 403 拒下）。
