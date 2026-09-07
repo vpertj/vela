@@ -37,3 +37,7 @@ pref("sidebar.verticalTabs", false); // 默认顶部标签（大陆习惯）；�
 
 // Vela 出厂语言：简体中文（en-US 为内置基准，设置页"语言"可随时切换）
 pref("intl.locale.requested", "zh-CN");
+
+// Vela 自构建分发：允许未签名 langpack（官方签名通道不适用于自有构建，
+// 否则 zh-CN 语言包被拒绝装载导致默认语言回落英文）
+pref("extensions.langpacks.signatures.required", false);
