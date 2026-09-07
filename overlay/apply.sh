@@ -20,6 +20,11 @@ if [ -d "$VELA/overlay/upstream" ]; then
   rsync -a "$VELA/overlay/upstream/" "$SRC/"
 fi
 
+# l10n 补丁：zh-CN 语言树的品牌文案修正，同步进 firefox-l10n 本地树
+if [ -d "$VELA/overlay/l10n" ]; then
+  rsync -a "$VELA/overlay/l10n/" "$HOME/.mozbuild/l10n-central/zh-CN/"
+fi
+
 # mozconfig：mach 默认读取源码树根目录的 mozconfig
 cp "$VELA/overlay/mozconfig" "$SRC/mozconfig"
 echo "overlay applied → $SRC"

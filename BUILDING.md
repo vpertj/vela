@@ -109,3 +109,9 @@ cd vela-src
 13. **mach build 与 langpack 的窗口期坑（dev 工作流）**：`mach build` 会清掉 dist/.app 里手工装的 langpack xpi；若在"build 后、install-langpack 前"启动过浏览器，profile 会留下 distro 安装标记而扩展库中实际不存在，防重装机制导致此后永远英文（新 profile 不受影响）。**日常开发请统一用 `vela/scripts/dev-run.sh`**（装语言包 + 清失效标记 + mach run 一条龙）。
 14. **上游文件修改流程纪律**：凡收编进 `overlay/upstream/` 的文件（browser.css、tabs.js 等），**必须先改 overlay 里的副本再跑 apply.sh**——直接改 vela-src 里的文件会在下一次 apply 时被 overlay 旧版覆盖（2026-09-07 静海第二批 CSS 曾因此整段丢失）。
 15. **验证清理纪律（误杀用户实例教训）**：自动化验证后清理测试实例，**严禁 `pkill -f 'Vela.app'` 宽匹配**——用户日常就开着 Vela 时会被误杀 → profile 被标记崩溃 → 用户下次启动反复见"恢复浏览状态"页。正确做法：只按测试 profile 路径精确匹配（如 `pkill -f '/tmp/vela-'`）或记录测试 PID 精确 kill。用户 profile 出现恢复页时：删 profile 根的 sessionstore.jsonlz4、sessionCheckpoints.json 与 sessionstore-backups/ 残留即可。
+
+### 品牌清零专项（2026-09-07 晚）
+
+- **UA 标识**：`overlay/upstream/netwerk/protocol/http/nsHttpHandler.cpp` 的 `BuildUserAgent()` 末尾追加 ` Vela/<版本>`（Zen/Brave 同款 append 模式，Firefox 兼容段完整保留）。实测 UA：`Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:153.0) Gecko/20100101 Firefox/153.0 Vela/153.3.0`。C++ 改动增量构建约 21 秒（只重编该文件+重链 XUL）。
+- **l10n 文案修正机制**：`overlay/l10n/zh-CN/<路径>` 收编改过的翻译文件，apply.sh 第三段 rsync 进 `~/.mozbuild/l10n-central/zh-CN/` → 改后必须重跑 `mach build langpack-zh-CN` + install-langpack。已改：`toolkit/toolkit/branding/brandings.ftl` 的 `-firefoxlabs-brand-name = Vela 实验室`。
+- **正式图标**：/tmp/vela-icon.swift 用 CoreGraphics 程序化绘制（靛青 #3563E9 squircle 底 + 白色几何帆 + 速度线）→ iconset/iconutil 成 icns，已替换 branding/vela 全套（firefox/disk/document.icns + default*.png）。生成脚本未入库，图标产物已入 overlay。
