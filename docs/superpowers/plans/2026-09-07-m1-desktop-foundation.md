@@ -66,7 +66,7 @@ git -C vela-src log -1 --format='%h %cd %s'    # 期望 esr153 近期提交
 - Consumes: `vela-src/mach`
 - Produces: 可用的构建工具链（后续 `./mach build` 依赖）
 
-- [ ] **Step 1: 后台跑 bootstrap，选 Firefox for Desktop**
+- [x] **Step 1: 后台跑 bootstrap，选 Firefox for Desktop**
 
 ```bash
 cd /Users/tianjun/Desktop/prog/vela-src
@@ -75,7 +75,7 @@ cd /Users/tianjun/Desktop/prog/vela-src
 
 交互菜单出现时选 **Firefox for Desktop Aurora/Release（桌面浏览器）** 那一项；询问是否安装 ccache/sccache 一律 y。预估 15-40 分钟。若非交互环境卡菜单：改用 `printf '2\ny\ny\n' | ./mach bootstrap`（序号以菜单实际显示为准）。
 
-- [ ] **Step 2: 验证**
+- [x] **Step 2: 验证**
 
 ```bash
 test -x ~/.mozbuild/clang/bin/clang && echo CLANG_OK
@@ -94,14 +94,14 @@ test -x ~/.mozbuild/clang/bin/clang && echo CLANG_OK
 - Consumes: Task 1 的源码树、Task 2 的工具链
 - Produces: `browser/branding/vela`（ MOZ_APP_DISPLAYNAME=Vela ）、可 configure 的 mozconfig；apply.sh 被 Task 4/6 复用
 
-- [ ] **Step 1: 复制 unofficial 品牌目录为 vela**
+- [x] **Step 1: 复制 unofficial 品牌目录为 vela**
 
 ```bash
 cd /Users/tianjun/Desktop/prog
 cp -R vela-src/browser/branding/unofficial vela/overlay/browser/branding/vela
 ```
 
-- [ ] **Step 2: 改显示名为 Vela**
+- [x] **Step 2: 改显示名为 Vela**
 
 查看 `vela/overlay/browser/branding/vela/configure.sh`，把显示名相关键改为：
 
@@ -113,7 +113,7 @@ MOZ_APP_VENDOR=VelaProject  # 若存在此键
 
 macOS bundle 名与 id：若源码树 `browser/branding/vela/configure.sh` 含 `MOZ_MACBUNDLE_ID`，改为 `org.vela.browser`；不含则 M1 接受默认（bundle id 留 Mozilla 默认，M2 再改，避免一次改太多无法定位构建问题）。
 
-- [ ] **Step 3: 写 overlay/apply.sh**
+- [x] **Step 3: 写 overlay/apply.sh**
 
 ```bash
 #!/usr/bin/env bash
@@ -126,7 +126,7 @@ cp "$VELA/overlay/mozconfig" "$SRC/mozconfig"
 echo "overlay applied → $SRC"
 ```
 
-- [ ] **Step 4: 写 overlay/mozconfig**
+- [x] **Step 4: 写 overlay/mozconfig**
 
 ```sh
 # Vela M1 桌面构建配置（macOS）
@@ -140,14 +140,14 @@ ac_add_options --with-ccache=sccache
 mk_add_options AUTOCLOBBER=1
 ```
 
-- [ ] **Step 5: 应用 overlay 并 configure**
+- [x] **Step 5: 应用 overlay 并 configure**
 
 ```bash
 chmod +x vela/overlay/apply.sh && vela/overlay/apply.sh
 cd vela-src && ./mach configure 2>&1 | tee ../vela/logs/configure.log
 ```
 
-- [ ] **Step 6: 验证**
+- [x] **Step 6: 验证**
 
 configure 退出码 0；`grep -r "Vela" vela-src/obj-*/config/mozconfig.txt` 能看到品牌项生效。
 
@@ -160,7 +160,7 @@ configure 退出码 0；`grep -r "Vela" vela-src/obj-*/config/mozconfig.txt` 能
 - Consumes: Task 2 工具链 + Task 3 mozconfig/品牌层
 - Produces: `vela-src/obj-*/dist/Vela.app`（名称以 branding 产物为准）
 
-- [ ] **Step 1: 后台全量构建**
+- [x] **Step 1: 后台全量构建**
 
 ```bash
 cd vela-src && ./mach build 2>&1 | tee ../vela/logs/build-full.log
@@ -168,7 +168,7 @@ cd vela-src && ./mach build 2>&1 | tee ../vela/logs/build-full.log
 
 预估 1-2.5 小时（arm64 首建）。失败时读 build-full.log 尾部定位，修复后重跑（mach 增量续跑）。
 
-- [ ] **Step 2: 验证**
+- [x] **Step 2: 验证**
 
 ```bash
 ls vela-src/obj-*/dist/ | head
@@ -184,7 +184,7 @@ du -sh vela-src/obj-*                              # 记录实测磁盘占用
 - Consumes: Task 4 的 .app
 - Produces: 启动验证结论 + 增量构建实测耗时
 
-- [ ] **Step 1: mach run 启动（自动化会话只验"进程不崩"）**
+- [x] **Step 1: mach run 启动（自动化会话只验"进程不崩"）**
 
 ```bash
 cd vela-src && timeout 25 ./mach run 2>&1 | tail -30
@@ -192,7 +192,7 @@ cd vela-src && timeout 25 ./mach run 2>&1 | tail -30
 
 进程存活 25s 且无 fatal/crash 即通过；窗口感官体验由用户在自己终端执行 `./mach run` 复验。
 
-- [ ] **Step 2: 增量构建验证**
+- [x] **Step 2: 增量构建验证**
 
 ```bash
 touch vela-src/browser/base/content/browser.xhtml
@@ -211,9 +211,9 @@ cd vela-src && time ./mach build 2>&1 | tail -5
 - Consumes: Task 1-5 全部实测数据
 - Produces: 可交接的构建知识库（M2 及 Windows 构建都会引用）
 
-- [ ] **Step 1: 写 BUILDING.md**（模板骨架：环境矩阵/源码获取/bootstrap/mozconfig/构建/启动/增量/踩坑各节，全部填实测值，不留 TBD）
+- [x] **Step 1: 写 BUILDING.md**（模板骨架：环境矩阵/源码获取/bootstrap/mozconfig/构建/启动/增量/踩坑各节，全部填实测值，不留 TBD）
 
-- [ ] **Step 2: commit + push**
+- [x] **Step 2: commit + push**
 
 ```bash
 cd vela && git add -A && git commit -m "feat(m1): 桌面底座——overlay 品牌层/mozconfig/apply 脚本/BUILDING 文档" && git push
