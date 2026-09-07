@@ -41,3 +41,10 @@ pref("intl.locale.requested", "zh-CN");
 // Vela 自构建分发：允许未签名 langpack（官方签名通道不适用于自有构建，
 // 否则 zh-CN 语言包被拒绝装载导致默认语言回落英文）
 pref("extensions.langpacks.signatures.required", false);
+
+// Vela 启航页：无资讯流/无推荐内容，只留搜索框 + 常用九宫格（高频自适应）
+pref("browser.newtabpage.activity-stream.feeds.section.topstories", false);
+pref("browser.newtabpage.activity-stream.feeds.highlights", false);
+pref("browser.newtabpage.activity-stream.feeds.snippets", false);
+pref("browser.newtabpage.activity-stream.showSearch", true);
+pref("browser.newtabpage.activity-stream.feeds.topsites", true);
