@@ -25,6 +25,9 @@ if [ -d "$VELA/overlay/l10n" ]; then
   rsync -a "$VELA/overlay/l10n/" "$HOME/.mozbuild/l10n-central/zh-CN/"
 fi
 
+# l10n 品牌重命名（幂等；重新 fetch l10n 树后由这里自动补跑）
+"$VELA/scripts/l10n-rebrand.sh"
+
 # mozconfig：mach 默认读取源码树根目录的 mozconfig
 cp "$VELA/overlay/mozconfig" "$SRC/mozconfig"
 echo "overlay applied → $SRC"

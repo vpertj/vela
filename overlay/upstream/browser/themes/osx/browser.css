@@ -286,3 +286,45 @@
 #urlbar[focused] {
   background-color: light-dark(#FFFFFF, #2A2D33) !important;
 }
+
+/* ======================================================================
+   Vela 静海 · 设置页重设计（about:preferences）：卡片化分组 + 导航精修
+   ====================================================================== */
+
+/* 左侧导航：圆角项 + 激活靛青左指示条 + 浅靛青底 */
+#categories .category {
+  border-radius: 8px;
+  margin-inline: 8px 12px;
+}
+#categories .category:hover {
+  background-color: color-mix(in srgb, currentColor 5%, transparent);
+}
+#categories .category[selected],
+#categories .category.selected {
+  position: relative;
+  background-color: color-mix(in srgb, light-dark(#3563E9, #5B8DEF) 10%, transparent);
+}
+#categories .category[selected]::before,
+#categories .category.selected::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 2px;
+  background-color: light-dark(#3563E9, #5B8DEF);
+}
+
+/* 分组卡片化：白卡 + 圆角 + 轻投影 + 舒展内距 */
+.pane-container groupbox {
+  background-color: light-dark(#FFFFFF, #2A2D33);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  padding: 18px 22px;
+  margin-block: 0 18px;
+}
+.pane-container html|h2 {
+  font-weight: 600;
+}
