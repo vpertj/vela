@@ -71,7 +71,27 @@ cargo install cbindgen
 ## 当前品牌状态与遗留
 
 - ✅ `MOZ_APP_DISPLAYNAME=Vela`，产物为 `dist/Vela.app`
+- ✅ 竖向标签栏出厂默认（`sidebar.verticalTabs=true`，M2 第一刀）
+- ✅ 出厂简体中文：zh-CN langpack 内置于 `distribution/extensions/` + `intl.locale.requested=zh-CN`；en-US 为内置基准，设置页"语言"可切换（ESR 构建 `intl.multilingual` 默认开启）
 - ⚠️ `MOZ_MACBUNDLE_ID=org.vela.browser` 被 configure 强制加了前缀，实际为 `org.mozilla.org.vela.browser`（toolkit/moz.configure 的前缀策略，M2 决定是否深改）
 - ⚠️ 图标仍为 unofficial 占位（Nightly 风格），M2 换正式 Vela 图标
 - ✅ `MOZ_APP_ID` 保持 Firefox 官方值（扩展与 profile 兼容，设计文档约定不动）
 - 感官验证：用户在自己终端 `cd vela-src && ./mach run` 复验窗口体验
+
+## 本地化（zh-CN）流程
+
+```bash
+# 一次性：拉取与 esr153 对齐的语言资源（revision 来自 browser/locales/l10n-changesets.json）
+mkdir -p ~/.mozbuild/l10n-central && cd ~/.mozbuild/l10n-central
+git init && git remote add origin https://github.com/mozilla-l10n/firefox-l10n.git
+git fetch --depth 1 origin b5a42a3462bb1c2fb2efbc442518034d07fc56a7
+git checkout FETCH_HEAD   # monorepo：各语言是根下子目录（zh-CN/ 等）
+
+# 日常（已在 overlay/mozconfig 固化 --with-l10n-base）：
+cd vela-src
+./mach build langpack-zh-CN                       # 产出 dist/mac/xpi/*.langpack.xpi
+/Users/tianjun/Desktop/prog/vela/scripts/install-langpack.sh   # 装进 Vela.app distribution/extensions
+# 出厂默认语言已固化在 overlay pref：intl.locale.requested=zh-CN
+```
+
+注意：改 mozconfig（含 --with-l10n-base）会触发约 20 分钟的大范围重编；纯 pref/CSS 改动仍为 18 秒级增量。
