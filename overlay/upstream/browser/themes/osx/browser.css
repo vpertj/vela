@@ -230,3 +230,24 @@
 #PersonalToolbar toolbarbutton.bookmark-item {
   padding-inline: 5px;
 }
+
+/* — Vela 收藏栏自动隐藏（360 式）：平时收起，鼠标移到顶部区域 250ms 滑出 — */
+#PersonalToolbar {
+  max-height: 0 !important;
+  overflow: hidden;
+  transition: max-height 250ms ease;
+}
+#navigator-toolbox:hover #PersonalToolbar,
+:root[customizing] #PersonalToolbar {
+  max-height: 40px !important;
+}
+
+/* — 静海第二批：细节打磨 — */
+.tabbrowser-tab .tab-close-button:hover {
+  background-color: color-mix(in srgb, var(--vela-accent) 15%, transparent);
+  border-radius: 6px;
+}
+#PersonalToolbar .bookmark-item:hover {
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 6px;
+}

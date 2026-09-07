@@ -107,3 +107,4 @@ cd vela-src
 11. 已知残留：设置页"Firefox 实验室"等 toolkit 层写死 Firefox 字样的 langpack 翻译，属深度品牌清理项（patch langpack ftl），排 M2 尾。
 12. **旧 profile 的 langpack 一次性安装标记**：profile 首启时会安装 distribution 语言包并写入 `extensions.installedDistroAddon.langpack-*` 标记（一次性，防重装）。若首启发生在 langpack 被签名检查拒绝的旧 app 下，标记照样写入且之后**不再重试**——修复 app 后该 profile 永远英文。症状：新 profile 中文、旧 profile 英文。修复：删 profile 的 prefs.js 中 `installedDistroAddon.langpack-*` 行后重启。真实分发不受影响（用户首启即修复后的 app）。
 13. **mach build 与 langpack 的窗口期坑（dev 工作流）**：`mach build` 会清掉 dist/.app 里手工装的 langpack xpi；若在"build 后、install-langpack 前"启动过浏览器，profile 会留下 distro 安装标记而扩展库中实际不存在，防重装机制导致此后永远英文（新 profile 不受影响）。**日常开发请统一用 `vela/scripts/dev-run.sh`**（装语言包 + 清失效标记 + mach run 一条龙）。
+14. **上游文件修改流程纪律**：凡收编进 `overlay/upstream/` 的文件（browser.css、tabs.js 等），**必须先改 overlay 里的副本再跑 apply.sh**——直接改 vela-src 里的文件会在下一次 apply 时被 overlay 旧版覆盖（2026-09-07 静海第二批 CSS 曾因此整段丢失）。
