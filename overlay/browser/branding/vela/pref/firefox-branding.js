@@ -48,3 +48,7 @@ pref("browser.newtabpage.activity-stream.feeds.highlights", false);
 pref("browser.newtabpage.activity-stream.feeds.snippets", false);
 pref("browser.newtabpage.activity-stream.showSearch", true);
 pref("browser.newtabpage.activity-stream.feeds.topsites", true);
+
+// Vela 出厂零打扰：不打开 Mozilla 遥测隐私告知页（首启直接进启航页）
+pref("datareporting.policy.firstRunURL", "");
+pref("browser.rights.3.shown", true);
