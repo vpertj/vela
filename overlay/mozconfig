@@ -8,4 +8,6 @@ ac_add_options --disable-tests
 ac_add_options --with-ccache=sccache
 ac_add_options --with-clang-path=$HOME/.mozbuild/clang/bin/clang
 ac_add_options --with-libclang-path=$HOME/.mozbuild/clang/lib
+# 本地化：esr153 对齐的 firefox-l10n（zh-CN pinned b5a42a34）
+ac_add_options --with-l10n-base=$HOME/.mozbuild/l10n-central
 mk_add_options AUTOCLOBBER=1
