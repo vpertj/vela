@@ -116,3 +116,4 @@ cd vela-src
 - **l10n 文案修正机制**：`overlay/l10n/zh-CN/<路径>` 收编改过的翻译文件，apply.sh 第三段 rsync 进 `~/.mozbuild/l10n-central/zh-CN/` → 改后必须重跑 `mach build langpack-zh-CN` + install-langpack。已改：`toolkit/toolkit/branding/brandings.ftl` 的 `-firefoxlabs-brand-name = Vela 实验室`。
 - **正式图标**：/tmp/vela-icon.swift 用 CoreGraphics 程序化绘制（靛青 #3563E9 squircle 底 + 白色几何帆 + 速度线）→ iconset/iconutil 成 icns，已替换 branding/vela 全套（firefox/disk/document.icns + default*.png）。生成脚本未入库，图标产物已入 overlay。
 16. **实验室（Labs）菜单项隐藏**：`browser.preferences.experimental.hidden` pref 会被 firefoxLabs.mjs 的 Nimbus 配方逻辑无视并改写（有可用配方即强制显示）。根治 = `distribution/policies.json` 的 `DisableFirefoxLabs: true`（官方企业策略），已固化进 install-langpack.sh（mach build 会清 dist，该脚本每次重写）。
+17. **profile 内 distro langpack 不随 dist 更新**：distribution 扩展机制是一次性安装（首启装入 profile 后，dist 里 xpi 更新不会同步到已装版本）——文案类改进对旧 profile 无效。dev 验收遇"文案还是旧的"：删 `obj-*/tmp/profile-default` 重建即装新版。"Mozilla 产品"菜单与实验室同源（Nimbus），已用 `DisableMoreFromMozilla` 策略一并禁用。
