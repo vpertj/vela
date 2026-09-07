@@ -12,3 +12,11 @@ APP="$OBJ/dist/Vela.app/Contents/Resources"
 mkdir -p "$APP/distribution/extensions"
 cp "$XPI" "$APP/distribution/extensions/langpack-zh-CN@firefox.mozilla.org.xpi"
 echo "langpack 装入 → $APP/distribution/extensions/"
+
+# dev profile 自愈：mach build 会清掉 dist 里手工装的 xpi，若窗口期有启动，
+# profile 会留下"已装 distro 语言包"标记但扩展库中实际不存在，且不再重装
+# （表现为界面回落英文）。这里顺带清标记，保证下次启动必然重装成功。
+PROFILE="$OBJ/tmp/profile-default"
+if [ -f "$PROFILE/prefs.js" ]; then
+  sed -i '' '/installedDistroAddon.langpack-zh-CN/d' "$PROFILE/prefs.js"
+fi
