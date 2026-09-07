@@ -251,3 +251,38 @@
   background-color: color-mix(in srgb, currentColor 10%, transparent);
   border-radius: 6px;
 }
+
+/* ======================================================================
+   Vela 静海第三批：对标 360 极速 Mac 版（Chrome 层次式工具栏）
+   层次 = 标签栏浅灰 / 地址栏行+收藏栏白（激活标签与白区无缝融合）
+   ====================================================================== */
+#TabsToolbar {
+  background-color: light-dark(#F5F6F7, #24262B);
+  box-shadow: none;
+}
+#nav-bar {
+  background-color: light-dark(#FFFFFF, #2A2D33);
+  box-shadow: 0 1px 0 light-dark(#E3E5E8, #33363C);
+}
+#PersonalToolbar {
+  background-color: light-dark(#FFFFFF, #2A2D33);
+}
+
+/* 标签：上圆下直卡页式（360/Chrome 形态），白底融合无色条 */
+#tabbrowser-tabs {
+  --tab-min-height: 32px;
+}
+#tabbrowser-tabs .tab-background {
+  border-radius: 8px 8px 0 0;
+}
+#tabbrowser-tabs .tab-background:is([selected], [multiselected]) {
+  box-shadow: 0 -1px 3px rgba(15, 23, 42, 0.06);
+}
+
+/* 地址框：非聚焦浅灰胶囊 / 聚焦白底（360 形态，靛青环保留） */
+#urlbar:not([focused]) {
+  background-color: light-dark(#F0F1F3, #383B42) !important;
+}
+#urlbar[focused] {
+  background-color: light-dark(#FFFFFF, #2A2D33) !important;
+}
