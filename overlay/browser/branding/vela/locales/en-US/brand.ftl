@@ -22,6 +22,6 @@
 -brand-full-name = Vela
 # This brand name can be used in messages where the product name needs to
 # remain unchanged across different versions (Nightly, Beta, etc.).
--brand-product-name = Firefox
--vendor-short-name = Mozilla
+-brand-product-name = Vela
+-vendor-short-name = VelaProject
 trademarkInfo = { " " }
