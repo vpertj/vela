@@ -67,6 +67,10 @@ cargo install cbindgen
 4. **artifact toolchain 解压到 cwd**：下载的 tar 解压在源码树根目录，需手动 mv 到 `~/.mozbuild/<标准名>`（configure 用 `bootstrap_path()` 按目录名查找）。
 5. **`./mach run -headless` 报错**：mach 把单横线参数拦截成 `-h`，必须 `--headless --no-remote`。
 6. **overlay 同步事故教训**：apply.sh 曾对整棵 `browser/` 用 `rsync --delete`，把上游 browser/ 源码删得只剩 branding（configure 报 "Cannot find project browser"）。已修复为只对 `browser/branding/vela/` 子树同步。源码树在 git 管理下，`git checkout -- browser/` 可完整恢复。
+7. **mach run 静默退出的两连坑（2026-09-07 启动不了排查实录）**：
+   - 坑 A：Vela 的实例 remoting 名默认是 `firefox`，与用户日常开着的官方 Firefox 同名——启动请求被转发给它后自退。修复：branding 加 `MOZ_APP_REMOTINGNAME=vela`（aurora 品牌同款机制）。
+   - 坑 B（真凶）：**自动化测试留下的孤儿 Vela 实例**（后台 GUI 测试杀 shell 不杀进程树，窗口在自动化会话里又不可见）一直占着 `vela` 实例名——此后所有 `./mach run` 都静默转发给它，秒退、无窗口、退出码 0、无 crash 报告。诊断命令：`ps aux | grep 'Vela.app/Contents/MacOS'`；清理：`pkill -f 'Vela.app/Contents/MacOS'`（精确路径匹配，不伤用户 /Applications/Firefox.app）。**教训：自动化跑 GUI 测试后必须精确清理进程树，否则占用实例名造成"启动不了"假象。**
+8. **mach build 会清掉 dist/.app 里手工放置的文件**（如 distribution/extensions 的 langpack）——每次 build 后必须重跑 `scripts/install-langpack.sh`。
 
 ## 当前品牌状态与遗留
 
