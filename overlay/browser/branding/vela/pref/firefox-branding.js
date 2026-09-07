@@ -30,3 +30,7 @@ pref("app.update.badgeWaitTime", 0);
 // Number of usages of the web console.
 // If this is less than 5, then pasting code into the web console is disabled
 pref("devtools.selfxss.count", 5);
+
+// Vela 出厂形态（M2 第一刀）：竖向标签栏，Arc 式侧栏布局
+pref("sidebar.revamp", true);
+pref("sidebar.verticalTabs", true);
