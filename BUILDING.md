@@ -125,3 +125,10 @@ cd vela-src
 - 手势表：←后退 →前进 ↓关闭 ↑↓刷新 ↓→恢复标签；轨迹靛青 polyline。
 - 坑：window 脚本的 `Services` 是精简版——`Services.ppmm` 不存在、`resource://gre/modules/Services.sys.mjs` 不存在（esr153 Services 为全局注入）；正解 = `window.messageManager`（loadFrameScript + addMessageListener 均在 window 域）。
 - **操作纪律：在 vela-src 目录跑 git 命令前先确认 cwd**——vela-src 的 git 是 Mozilla 上游仓库，误 commit 后 `git reset HEAD~1` 撤销（2026-09-07 实际发生过，push 被上游 403 拒下）。
+
+### 启航页品牌资产与默认磁贴（2026-09-07 夜）
+
+- **Nightly 图片资产根修**：字符串扫描扫不到的残留=图片资产——`branding/vela/content/` 的 about-logo.png/@2x、about-logo-private、about.png（Nightly 球）与 about-wordmark.svg/firefox-wordmark.svg（路径烘焙的"Nightly"文字图形）。已用 CoreGraphics 生成的 Vela 帆图标全套替换，wordmark 重写为 SVG `<text fill="context-fill">`（注意：**newtab 实际引用的是 firefox-wordmark.svg**，about-wordmark.svg 改完必须同步拷贝，2026-09-07 踩过）。
+- **默认磁贴三重坑**：esr153 topsites 默认源优先级 = `browser.topsites.useRemoteSetting`(true 时从 Mozilla RemoteSettings 在线拉，本地改什么都没用) → `browser.newtabpage.activity-stream.default.sites` 覆写 pref（注意不是废弃的 browser.newtabpage.default.sites）→ DefaultSites.sys.mjs 硬编码（已 overlay 收编改大陆站）。出厂三件套：useRemoteSetting=false + override pref 设中文站 + DefaultSites 补丁（防御性）。
+- **遥测告知条**：datareporting.policy.firstRunURL 置空只防开页，顶部告知条要 `datareporting.policy.dataSubmissionPolicyBypassNotification=true`。
+- 磁贴标签首启显示主机名（zhihu/bilibili），访问一次后自动换成站点标题——正常行为。

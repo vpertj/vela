@@ -55,3 +55,11 @@ pref("browser.rights.3.shown", true);
 
 // Vela 出厂不显示"实验室"分区（内部实验开关不面向用户）
 pref("browser.preferences.experimental.hidden", true);
+pref("datareporting.policy.dataSubmissionPolicyBypassNotification", true);
+
+// Vela 默认磁贴：大陆常用站（首次启动的初始九宫格，之后按使用频次自适应）
+pref("browser.newtabpage.activity-stream.default.sites", "https://www.baidu.com/,https://www.zhihu.com/,https://www.bilibili.com/,https://weibo.com/,https://www.taobao.com/");
+
+// 默认磁贴本地化：关闭 Mozilla RemoteSettings 在线磁贴源（既保证大陆默认站生效，
+// 也去掉首启对该服务器的网络依赖），改用上方 activity-stream.default.sites 本地清单
+pref("browser.topsites.useRemoteSetting", false);
