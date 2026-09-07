@@ -52,3 +52,6 @@ pref("browser.newtabpage.activity-stream.feeds.topsites", true);
 // Vela 出厂零打扰：不打开 Mozilla 遥测隐私告知页（首启直接进启航页）
 pref("datareporting.policy.firstRunURL", "");
 pref("browser.rights.3.shown", true);
+
+// Vela 出厂不显示"实验室"分区（内部实验开关不面向用户）
+pref("browser.preferences.experimental.hidden", true);
