@@ -6,4 +6,6 @@ ac_add_options --disable-debug
 ac_add_options --disable-crashreporter
 ac_add_options --disable-tests
 ac_add_options --with-ccache=sccache
+ac_add_options --with-clang-path=$HOME/.mozbuild/clang/bin/clang
+ac_add_options --with-libclang-path=$HOME/.mozbuild/clang/lib
 mk_add_options AUTOCLOBBER=1
