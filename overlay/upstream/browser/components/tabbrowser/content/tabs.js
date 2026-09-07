@@ -437,7 +437,7 @@
       if (event.button == 0 && !event.shiftKey) {
         let tab = event.target.closest?.("tab");
         if (tab && this.allTabs.includes(tab)) {
-          this.tabbrowser.removeTab(tab);
+          gBrowser.removeTab(tab);
           event.preventDefault();
           return;
         }
