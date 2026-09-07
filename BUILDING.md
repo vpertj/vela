@@ -105,3 +105,4 @@ cd vela-src
 9. **langpack 签名检查导致默认语言回落英文**：`extensions.langpacks.signatures.required` 默认 true（firefox.js），自构建未签名 langpack 被拒绝装载 → `intl.locale.requested=zh-CN` 找不到资源静默回落 en-US。修复：branding pref 覆盖为 false（自构建自分发场景）。
 10. **品牌文案藏在 langpack 里，改 brand.ftl 必须重编 langpack**：`browser/branding/vela/locales/en-US/brand.ftl` 的品牌词（原 Nightly→Vela）会在 `mach build langpack-zh-CN` 时编译进语言包——只跑 `mach build` 不重编 langpack 的话界面品牌词不变。正确顺序：改 ftl → `mach build` → `mach build langpack-zh-CN` → `scripts/install-langpack.sh`（三步缺一不可，build 还会清掉 dist 里手工装的 xpi）。
 11. 已知残留：设置页"Firefox 实验室"等 toolkit 层写死 Firefox 字样的 langpack 翻译，属深度品牌清理项（patch langpack ftl），排 M2 尾。
+12. **旧 profile 的 langpack 一次性安装标记**：profile 首启时会安装 distribution 语言包并写入 `extensions.installedDistroAddon.langpack-*` 标记（一次性，防重装）。若首启发生在 langpack 被签名检查拒绝的旧 app 下，标记照样写入且之后**不再重试**——修复 app 后该 profile 永远英文。症状：新 profile 中文、旧 profile 英文。修复：删 profile 的 prefs.js 中 `installedDistroAddon.langpack-*` 行后重启。真实分发不受影响（用户首启即修复后的 app）。
