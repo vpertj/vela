@@ -33,7 +33,7 @@ pref("devtools.selfxss.count", 5);
 
 // Vela 出厂形态（M2 第一刀）：竖向标签栏，Arc 式侧栏布局
 pref("sidebar.revamp", true);
-pref("sidebar.verticalTabs", true);
+pref("sidebar.verticalTabs", false); // 默认顶部标签（大陆习惯）；左栏竖标签为可切换的专注形态
 
 // Vela 出厂语言：简体中文（en-US 为内置基准，设置页"语言"可随时切换）
 pref("intl.locale.requested", "zh-CN");
