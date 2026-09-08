@@ -177,17 +177,239 @@ var VelaGitHub = {
     return this._profile;
   },
 
-  /** 启动时恢复登录态 */
+  /** 启动时恢复登录态；已登录且开启同步则先同步一次 */
   async init() {
     try {
       await this._loadToken();
       if (this._token) {
         await this.refreshProfile();
         Services.obs.notifyObservers(null, "vela-github:login");
+        if (Services.prefs.getBoolPref(this.SYNC_ENABLED_PREF, true)) {
+          await this.syncNow().catch(ex =>
+            Cu.reportError("VelaGitHub startup sync: " + ex)
+          );
+        }
+        this._addBookmarkObserver();
       }
     } catch (ex) {
       Cu.reportError("VelaGitHub init: " + ex);
     }
+  },
+
+  /* ==================== 收藏同步引擎（M5a） ==================== */
+
+  SYNC_ENABLED_PREF: "vela.github.sync.enabled",
+  LAST_SYNC_PREF: "vela.github.lastSync",
+  REPO_NAME: "vela-sync",
+  REPO_PATH: "vela-sync/bookmarks.json",
+  _applying: false,
+  _syncTimer: 0,
+
+  /** 收藏变更 → 5s 防抖自动同步 */
+  _addBookmarkObserver() {
+    if (this._bookmarkObserver) {
+      return;
+    }
+    this._bookmarkObserver = {
+      onItemAdded: () => this._schedule(),
+      onItemRemoved: () => this._schedule(),
+      onItemChanged: () => this._schedule(),
+      onItemMoved: () => this._schedule(),
+      onBeginUpdateBatch: () => {},
+      onEndUpdateBatch: () => {},
+    };
+    PlacesUtils.bookmarks.addObserver(this._bookmarkObserver);
+  },
+
+  _schedule() {
+    if (this._applying) {
+      return; // 同步写入引发的变更不回流
+    }
+    if (!Services.prefs.getBoolPref(this.SYNC_ENABLED_PREF, true)) {
+      return;
+    }
+    if (this._syncTimer) {
+      return;
+    }
+    this._syncTimer = window.setTimeout(() => {
+      this._syncTimer = 0;
+      this.syncNow().catch(ex => Cu.reportError("VelaGitHub autosync: " + ex));
+    }, 5000);
+  },
+
+  get _apiHeaders() {
+    return {
+      Authorization: "Bearer " + this._token,
+      Accept: "application/vnd.github+json",
+    };
+  },
+
+  /** 私有同步仓库不存在则自动创建 */
+  async _ensureRepo() {
+    const owner = this._profile.login;
+    const res = await fetch(
+      `${this.API}/repos/${owner}/${this.REPO_NAME}`,
+      { headers: this._apiHeaders }
+    );
+    if (res.ok) {
+      return;
+    }
+    if (res.status != 404) {
+      throw new Error("repo lookup " + res.status);
+    }
+    const create = await fetch(this.API + "/user/repos", {
+      method: "POST",
+      headers: { ...this._apiHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: this.REPO_NAME,
+        private: true,
+        auto_init: true,
+        description: "Vela browser bookmarks sync (auto-created)",
+      }),
+    });
+    if (!create.ok && create.status != 422) {
+      throw new Error("repo create " + create.status);
+    }
+  },
+
+  /** 收藏树 → 紧凑 JSON（folders + bookmarks） */
+  async _serialize() {
+    const root = await PlacesUtils.bookmarks.fetch();
+    const walk = n => {
+      const o = { t: n.title || "" };
+      if (n.url) {
+        o.u = n.url.spec;
+      }
+      if (n.dateAdded) {
+        o.d = Number(n.dateAdded);
+      }
+      if (n.children) {
+        const kids = n.children
+          .filter(
+            k =>
+              k.type == PlacesUtils.bookmarks.TYPE_FOLDER ||
+              k.type == PlacesUtils.bookmarks.TYPE_BOOKMARK
+          )
+          .map(walk);
+        if (kids.length) {
+          o.c = kids;
+        }
+        o.f = n.type == PlacesUtils.bookmarks.TYPE_FOLDER;
+      }
+      return o;
+    };
+    return {
+      v: 1,
+      at: Date.now(),
+      buckets: (root.children || [])
+        .filter(c => c.type == PlacesUtils.bookmarks.TYPE_FOLDER)
+        .map(walk),
+    };
+  },
+
+  /** 远端树合并进本地：按 URL 并集（v1 不传播删除） */
+  async _applyRemote(remote) {
+    if (!remote || !remote.buckets) {
+      return;
+    }
+    const localRoot = await PlacesUtils.bookmarks.fetch();
+    const localUrls = new Set();
+    const collect = n => {
+      if (n.url) {
+        localUrls.add(n.url.spec);
+      }
+      (n.children || []).forEach(collect);
+    };
+    collect(localRoot);
+    this._applying = true;
+    try {
+      const mergeFolder = async (remoteNode, localNode, parentGuid) => {
+        let guid = localNode ? localNode.guid : null;
+        if (!guid) {
+          guid = (
+            await PlacesUtils.bookmarks.insert({
+              parentGuid,
+              type: PlacesUtils.bookmarks.TYPE_FOLDER,
+              title: remoteNode.t || "synced",
+            })
+          ).guid;
+        }
+        const localKids = (localNode && localNode.children) || [];
+        for (const kid of remoteNode.c || []) {
+          if (kid.c) {
+            const localKid = localKids.find(k => (k.title || "") === kid.t && k.type == PlacesUtils.bookmarks.TYPE_FOLDER);
+            await mergeFolder(kid, localKid, guid);
+          } else if (kid.u && !localUrls.has(kid.u)) {
+            await PlacesUtils.bookmarks.insert({
+              parentGuid: guid,
+              type: PlacesUtils.bookmarks.TYPE_BOOKMARK,
+              url: kid.u,
+              title: kid.t || "",
+            });
+            localUrls.add(kid.u);
+          }
+        }
+      };
+      for (const bucket of remote.buckets) {
+        const localBucket = (localRoot.children || []).find(
+          c => (c.title || "") === bucket.t
+        );
+        await mergeFolder(bucket, localBucket, PlacesUtils.bookmarks.rootGuid);
+      }
+    } finally {
+      this._applying = false;
+    }
+  },
+
+  /** 同步主流程：建仓 → 拉取合并 → 推送 */
+  async syncNow() {
+    const token = await this._loadToken();
+    if (!token) {
+      throw new Error("not logged in");
+    }
+    if (!this._profile) {
+      await this.refreshProfile();
+    }
+    const owner = this._profile.login;
+    await this._ensureRepo();
+    const fileUrl = `${this.API}/repos/${owner}/${this.REPO_NAME}/contents/${this.REPO_PATH}`;
+    let sha = null,
+      remote = null;
+    const head = await fetch(fileUrl, { headers: this._apiHeaders });
+    if (head.ok) {
+      const j = await head.json();
+      sha = j.sha;
+      try {
+        remote = JSON.parse(
+          decodeURIComponent(escape(atob(j.content.replace(/\n/g, ""))))
+        );
+      } catch (ex) {
+        remote = null;
+      }
+    } else if (head.status != 404) {
+      throw new Error("fetch remote " + head.status);
+    }
+    if (remote) {
+      await this._applyRemote(remote);
+    }
+    const payload = JSON.stringify(await this._serialize(), null, 1);
+    const content = btoa(unescape(encodeURIComponent(payload)));
+    const put = await fetch(fileUrl, {
+      method: "PUT",
+      headers: { ...this._apiHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "Vela bookmarks sync " + new Date().toISOString(),
+        content,
+        branch: "main",
+        ...(sha ? { sha } : {}),
+      }),
+    });
+    if (!put.ok) {
+      const t = await put.text();
+      throw new Error("push " + put.status + " " + t.slice(0, 160));
+    }
+    Services.prefs.setIntPref(this.LAST_SYNC_PREF, Date.now());
+    Services.obs.notifyObservers(null, "vela-github:synced");
   },
 };
 

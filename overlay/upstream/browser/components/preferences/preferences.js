@@ -415,6 +415,7 @@ const CONFIG_PANES = Object.freeze({
     l10nId: "account-sync-section",
     iconSrc: "chrome://browser/skin/fxa/avatar-empty.svg",
     groupIds: [
+      "githubSync",
       "defaultBrowserSync",
       "accountDisabled",
       "account",
