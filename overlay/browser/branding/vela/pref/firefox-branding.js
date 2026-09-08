@@ -70,3 +70,6 @@ pref("vela.superdrag.enabled", true);
 // Vela 收藏交互：书签菜单按钮常驻顶栏（悬停展开下拉），收藏栏默认不显示
 pref("browser.toolbars.bookmarks.visibility", "never");
 pref("vela.bookmarks.hoverOpen", true);
+
+// GitHub OAuth App（Vela）——Device Flow 登录与收藏同步
+pref("vela.github.clientId", "Ov23liI2QERC3AZu8mdn");
