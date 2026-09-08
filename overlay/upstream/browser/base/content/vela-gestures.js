@@ -25,49 +25,14 @@ var VelaGestures = {
     }
     // window 级 messageManager：注册 frame script 到本窗口全部浏览器（含后续新建）
     const mm = window.messageManager;
-    mm.loadFrameScript(this._frameScriptSrc, true);
+    mm.loadFrameScript(this.FRAME_SCRIPT, true);
     mm.addMessageListener("Vela:GestureStart", this);
     mm.addMessageListener("Vela:GestureMove", this);
     mm.addMessageListener("Vela:GestureEnd", this);
   },
 
-  get _frameScriptSrc() {
-    return `data:application/javascript,${encodeURIComponent(`
-      (function() {
-        let start = null, path = [], dirs = "", lastDir = "", armed = false;
-        const TH = ${this.THRESHOLD};
-        function send(name, data) { sendAsyncMessage(name, data); }
-        addEventListener("mousedown", e => {
-          if (e.button != 2) return;
-          start = { x: e.screenX, y: e.screenY, cx: e.clientX, cy: e.clientY };
-          path = [{ x: e.clientX, y: e.clientY }];
-          dirs = ""; lastDir = ""; armed = false;
-        }, true);
-        addEventListener("mousemove", e => {
-          if (!start) return;
-          let dx = e.screenX - start.x, dy = e.screenY - start.y;
-          let d = Math.abs(dx) > Math.abs(dy)
-            ? (dx > 0 ? "R" : "L") : (dy > 0 ? "D" : "U");
-          if ((d == "R" && dx > TH) || (d == "L" && dx < -TH) ||
-              (d == "D" && dy > TH) || (d == "U" && dy < -TH)) {
-            if (d != lastDir) { dirs += d; lastDir = d; }
-            start.x = e.screenX; start.y = e.screenY;
-            armed = armed || dirs.length >= 1;
-          }
-          path.push({ x: e.clientX, y: e.clientY });
-          if (armed) send("Vela:GestureMove", { path });
-        }, true);
-        addEventListener("mouseup", e => {
-          if (e.button != 2 || !start) return;
-          if (armed) send("Vela:GestureEnd", { dirs, path });
-          start = null; armed = false;
-        }, true);
-        addEventListener("contextmenu", e => {
-          if (armed) { e.preventDefault(); e.stopPropagation(); armed = false; }
-        }, true);
-      })();
-    `)}`;
-  },
+  FRAME_SCRIPT: "chrome://browser/content/vela-framescript.js",
+
 
   receiveMessage(msg) {
     let browser = msg.target;

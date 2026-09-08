@@ -163,3 +163,4 @@ cd vela-src
 `Services.wm.getMostRecentWindow("navigator:browser").VelaGitHub.beginLogin()`（登录：弹授权码+开授权页+轮询）
 `Services.wm.getMostRecentWindow("navigator:browser").VelaGitHub.syncNow()`（同步：自动建仓+推送）
 API 段已用 gh 凭据全链路实测（建仓/404/PUT/回读+SHA 全部 ✓，仓库 vpertj/vela-sync 已建）。
+26. **frame script 两大坑（手势/拖拽/磁贴失效真凶）**：①`loadFrameScript` 传 **data: URL 会被 esr153 拒绝**（InternalError: unsafe filename，且部分进程又能执行，症状分裂）；②frame script 沙箱**没有 window/location 全局**（用 content / content.location）。修复：内嵌 data: 脚本改为真实 chrome 文件 `vela-framescript.js`（jar.mn 注册），location → content.location。此修复同时解决：手势失效、拖拽失效、磁贴点击不拦截。诊断入口：mach run stderr 里 grep "unsafe filename"。

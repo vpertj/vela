@@ -411,10 +411,34 @@ var VelaGitHub = {
     Services.prefs.setIntPref(this.LAST_SYNC_PREF, Date.now());
     Services.obs.notifyObservers(null, "vela-github:synced");
   },
+
+  /** 顶栏登录按钮菜单动作 */
+  toolbarAction(kind, event) {
+    event.stopPropagation();
+    (async () => {
+      if (kind == "login") {
+        if (this.status.loggedIn) {
+          window.alert("已登录：" + this.status.name);
+          return;
+        }
+        const { userCode } = await this.beginLogin();
+        window.alert("请在已打开的 GitHub 页面输入授权码：\n" + userCode);
+      } else if (kind == "sync") {
+        if (!this.status.loggedIn) {
+          window.alert("请先登录 GitHub 账号");
+          return;
+        }
+        await this.syncNow();
+        window.alert("收藏同步完成 ✓");
+      } else if (kind == "logout") {
+        await this.logout();
+        window.alert("已退出 GitHub 登录");
+      }
+    })().catch(ex => window.alert("操作失败：" + ex.message));
+  },
 };
 
 window.addEventListener(
-  "load",
   () => Services.tm.dispatchToMainThread(() => VelaGitHub.init()),
   { once: true }
 );

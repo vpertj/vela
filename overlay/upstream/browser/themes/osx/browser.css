@@ -317,3 +317,8 @@
 .pane-container html|h2 {
   font-weight: 600;
 }
+
+/* 火狐账号按钮退役：由 Vela GitHub 登录按钮替代（双重保险，防 CUI 复原） */
+#fxa-toolbar-menu-button {
+  display: none !important;
+}

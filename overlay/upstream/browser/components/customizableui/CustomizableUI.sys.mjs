@@ -67,7 +67,7 @@ const kSubviewEvents = ["ViewShowing", "ViewHiding"];
  * The current version. We can use this to auto-add new default widgets as necessary.
  * (would be const but isn't because of testing purposes)
  */
-var kVersion = 25; // Vela: +1 for bookmarks-menu-button navbar migration
+var kVersion = 26; // Vela: +1 bookmarks-menu-button navbar migration, +1 login button swap
 
 /**
  * Buttons removed from built-ins by version they were removed. kVersion must be
@@ -368,7 +368,7 @@ var CustomizableUIInternal = {
       "downloads-button",
       AppConstants.MOZ_DEV_EDITION ? "developer-button" : null,
       lazy.ippEnabled ? "ipprotection-button" : null,
-      "fxa-toolbar-menu-button",
+      "vela-login-button",
       lazy.resetPBMToolbarButtonEnabled ? "reset-pbm-toolbar-button" : null,
     ].filter(name => name);
 
@@ -729,6 +729,17 @@ var CustomizableUIInternal = {
           }
         }
         navbarPlacements.splice(insertionPoint, 0, "bookmarks-menu-button");
+      }
+    }
+
+    // Vela: replace the Firefox-account toolbar button with the GitHub login
+    // button in saved toolbars (in place, keeping the position).
+    if (currentVersion < 26) {
+      for (let placements of Object.values(gSavedState.placements)) {
+        let fxaIndex = placements.indexOf("fxa-toolbar-menu-button");
+        if (fxaIndex != -1) {
+          placements[fxaIndex] = "vela-login-button";
+        }
       }
     }
 

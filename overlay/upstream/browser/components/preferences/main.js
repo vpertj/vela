@@ -2840,6 +2840,12 @@ Preferences.addSetting({
   visible: () => !(window.VelaGitHub && VelaGitHub.status.loggedIn),
 });
 Preferences.addSetting({
+  id: "githubLoggedOutMsg",
+});
+Preferences.addSetting({
+  id: "githubSyncStatus",
+});
+Preferences.addSetting({
   id: "githubLoggedInGroup",
   visible: () => !!(window.VelaGitHub && VelaGitHub.status.loggedIn),
 });
