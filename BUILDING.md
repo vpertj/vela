@@ -159,3 +159,7 @@ cd vela-src
 23. **启航页玻璃态**：activity-stream.css 尾部 Vela 区块——搜索框/磁贴 backdrop-filter 磨砂+半透明白+细描边+深投影，壁纸之上效果最佳（纯色底偏含蓄）。壁纸由 RemoteSettings 集合 newtab-wallpapers-v2 供给（网络依赖），pref: newtabWallpapers.enabled/.wallpaper。
 - **GitHub OAuth App 已注册**：client_id `Ov23liI2QERC3AZu8mdn`（Device Flow，无 secret；Redirect URI 填了仓库地址但设备流不用；token 不过期）。设备流申请接口已 curl 实测通（返回 user_code/verification_uri/device_code）。client_id 以出厂 pref `vela.github.clientId` 固化。
 24. **M5a GitHub 同步（进行中）**：引擎完成（VelaGitHub.syncNow：自动建私有仓库 vela-sync → 收藏树序列化 → URL 并集合并 → Contents API SHA 乐观锁推送；PlacesUtils 观察者 5s 防抖；启动自动同步）。设置页卡片已注册（account-sync.mjs githubSync 组 + main.js addSetting 处理器 + zh-CN/en-US 文案入包）——**渲染门槛未破**：卡片在"账户与同步"面板只渲染组标题不渲染条目（探针实证 items=2、setting 解析成功、visible=true，但控件未绘制；同构 promo 卡片在"主页"面板正常）。下一步：远程调试器（devtools protocol）实时 DOM 调试。**过渡可用**：浏览器控制台执行 `VelaGitHub.beginLogin()`（输授权码登录）→ `VelaGitHub.syncNow()`（自动建仓+同步）。
+25. **浏览器控制台触发 VelaGitHub 的正确姿势**：Browser Console 不在 browser.xhtml 作用域，直接敲 `VelaGitHub` 会 ReferenceError。正确命令：
+`Services.wm.getMostRecentWindow("navigator:browser").VelaGitHub.beginLogin()`（登录：弹授权码+开授权页+轮询）
+`Services.wm.getMostRecentWindow("navigator:browser").VelaGitHub.syncNow()`（同步：自动建仓+推送）
+API 段已用 gh 凭据全链路实测（建仓/404/PUT/回读+SHA 全部 ✓，仓库 vpertj/vela-sync 已建）。
