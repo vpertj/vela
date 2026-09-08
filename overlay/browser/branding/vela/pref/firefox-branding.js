@@ -66,3 +66,7 @@ pref("browser.topsites.useRemoteSetting", false);
 
 // Vela 超级拖拽（拖链接=后台标签；拖选中文本=默认引擎搜索）
 pref("vela.superdrag.enabled", true);
+
+// Vela 收藏交互：书签菜单按钮常驻顶栏（悬停展开下拉），收藏栏默认不显示
+pref("browser.toolbars.bookmarks.visibility", "never");
+pref("vela.bookmarks.hoverOpen", true);

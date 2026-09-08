@@ -147,3 +147,9 @@ cd vela-src
 - **教训：菜单可见性有两套系统**（旧 getElementById.hidden + 新 SettingPaneManager visible 回调），只补一处无效。
 - **en-US 回退源已纳入 rebrand**（vela-src browser/locales/en-US + toolkit/locales/en-US），外科手术版 v3 脚本只动值不动键（首版粗放替换曾损坏 zh-CN 含 Firefox 的键名，已 git 还原重跑修复）。
 - **"Vela 帮助"入口移除**：preferences.xhtml 的 helpButton（slot=secondary-nav, support-page=preferences）整块删除，overlay 收编。
+
+### 收藏交互改版（2026-09-08，用户 UX 反馈驱动）
+
+- 用户否决"hover 滑出收藏栏"方案（误触发烦人），定案：**收藏入口常驻顶栏右侧（登录按钮旁），悬停 150ms 自动展开下拉**。
+- 实现：①撤 auto-hide CSS ②`browser.toolbars.bookmarks.visibility=never`（收藏栏默认不显示）③CustomizableUI.sys.mjs 默认 nav-bar 布局插入 `bookmarks-menu-button`（downloads-button 前）④`vela-bookmarks.js` 悬停展开（`btn.open = true`，BMB 是 type="menu" toolbarbutton 原生支持 open 属性；pref `vela.bookmarks.hoverOpen`）。
+- 下拉内容 = 书签菜单（书签工具栏文件夹/最近书签/全部书签），星标收藏页仍在地址栏。

@@ -16,6 +16,7 @@
   Services.scriptloader.loadSubScript("chrome://browser/content/browser.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/vela-gestures.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/vela-superdrag.js", this);
+  Services.scriptloader.loadSubScript("chrome://browser/content/vela-bookmarks.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/places/browserPlacesViews.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/browser-places.js", this);
   Services.scriptloader.loadSubScript("chrome://global/content/globalOverlay.js", this);
