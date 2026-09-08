@@ -35,6 +35,7 @@ browser.jar:
         content/browser/vela-gestures.js             (content/vela-gestures.js)
         content/browser/vela-superdrag.js            (content/vela-superdrag.js)
         content/browser/vela-bookmarks.js            (content/vela-bookmarks.js)
+        content/browser/vela-github.js              (content/vela-github.js)
 *       content/browser/browser.xhtml                 (content/browser.xhtml)
         content/browser/browser-a11yUtils.js          (content/browser-a11yUtils.js)
         content/browser/browser-addons.js             (content/browser-addons.js)
