@@ -25,9 +25,11 @@ var VelaSuperDrag = {
   get _frameScriptSrc() {
     return `data:application/javascript,${encodeURIComponent(`
       (function() {
-        let dragged = null;
+        let dragged = null, startX = 0, startY = 0, moved = false;
+        const MIN_DRAG = 8; // px：低于此距离视为手抖点击，不触发超级拖拽
         addEventListener("dragstart", e => {
-          dragged = null;
+          dragged = null; moved = false;
+          startX = e.screenX; startY = e.screenY;
           try {
             const dt = e.dataTransfer;
             const a = e.target.closest && e.target.closest("a[href]");
@@ -39,15 +41,35 @@ var VelaSuperDrag = {
             }
           } catch (ex) { dragged = null; }
         }, true);
+        addEventListener("dragover", e => {
+          if (!dragged) return;
+          const dx = e.screenX - startX, dy = e.screenY - startY;
+          if (dx * dx + dy * dy >= MIN_DRAG * MIN_DRAG) moved = true;
+        }, true);
         addEventListener("dragend", e => {
           if (!dragged) return;
           try {
-            if (e.dataTransfer.dropEffect === "none") {
+            const dx = e.screenX - startX, dy = e.screenY - startY;
+            const far = moved || dx * dx + dy * dy >= MIN_DRAG * MIN_DRAG;
+            if (far && e.dataTransfer.dropEffect === "none") {
               sendAsyncMessage("Vela:SuperDrag", dragged);
             }
           } catch (ex) {}
           dragged = null;
         }, true);
+        // Vela：启航页磁贴点击 → 新标签打开（360 习惯；拖到别处仍是原生拖放）
+        if (/^about:(home|newtab)/.test(location.href)) {
+          addEventListener("click", e => {
+            if (e.button != 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            const t = e.target.closest && e.target.closest(".top-site-outer");
+            if (!t) return;
+            const a = t.matches("a[href]") ? t : t.querySelector("a[href]");
+            const href = a && a.href;
+            if (!href || !/^https?:/.test(href)) return;
+            e.preventDefault(); e.stopPropagation();
+            sendAsyncMessage("Vela:SuperDrag", { kind: "link", value: href, foreground: true });
+          }, true);
+        }
       })();
     `)}`;
   },
@@ -58,7 +80,7 @@ var VelaSuperDrag = {
     if (!value) return;
     if (kind === "link") {
       openLinkIn(value, "tab", {
-        inBackground: true,
+        inBackground: !msg.data.foreground,
         relatedToCurrent: true,
         triggeringPrincipal: browser.contentPrincipal,
       });

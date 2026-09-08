@@ -11,9 +11,10 @@ if [ -d "$PROFILE" ]; then
   cat > "$PROFILE/user.js" << 'UJ'
 user_pref("browser.sessionstore.resume_from_crash", false);
 user_pref("browser.startup.page", 0);
+// 禁 about:home 启动缓存：dev 换构建易缓存到半残渲染（白屏启航页），
+// 且不用每次清空 startupCache（清空会让每次启动全量重编译，明显卡顿）
+user_pref("browser.startup.homepage.abouthome_cache.enabled", false);
 UJ
-  # 清 startupCache：dev 反复换构建易缓存到半残的 about:home 渲染（白屏新标签页）
-  rm -rf "$PROFILE/startupCache"
 fi
 
 exec "$VELA-src/mach" run "$@"
