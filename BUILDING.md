@@ -154,3 +154,4 @@ cd vela-src
 - 实现：①撤 auto-hide CSS ②`browser.toolbars.bookmarks.visibility=never`（收藏栏默认不显示）③CustomizableUI.sys.mjs 默认 nav-bar 布局插入 `bookmarks-menu-button`（downloads-button 前）④`vela-bookmarks.js` 悬停展开（`btn.open = true`，BMB 是 type="menu" toolbarbutton 原生支持 open 属性；pref `vela.bookmarks.hoverOpen`）。
 - 下拉内容 = 书签菜单（书签工具栏文件夹/最近书签/全部书签），星标收藏页仍在地址栏。
 20. **新标签页白屏 = profile 的 about:home 启动缓存坏了**：AboutHomeStartupCache 把首次渲染缓存进 profile/startupCache；dev 换构建后 buildID 不变→陈旧缓存持续命中（曾渲染过半残状态就永远白屏）。修复：删 profile/startupCache（dev-run.sh 已自动化）。全新 profile 不受影响。新标签页搜索框自动使用"搜索设置"里的默认引擎（handoff 机制）。
+21. **顶栏按钮布局对老 profile 不生效 = 缺迁移**：CustomizableUI 默认布局（navbarPlacements）只用于全新 profile；已存布局走 currentVersion 迁移。Vela 加了 v25 迁移（kVersion 24→25）：已存 nav-bar 且无 bookmarks-menu-button 时，插到 urlbar 右侧簇首位（登录按钮旁）。验证法：复制 profile 启动后读 prefs.js 的 browser.uiCustomization.state。注意验证截图时 findwin 可能抓到用户正在跑的实例窗口（按标题过滤不够，需按 profile 判断）。

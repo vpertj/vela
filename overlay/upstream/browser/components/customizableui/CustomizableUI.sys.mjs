@@ -67,7 +67,7 @@ const kSubviewEvents = ["ViewShowing", "ViewHiding"];
  * The current version. We can use this to auto-add new default widgets as necessary.
  * (would be const but isn't because of testing purposes)
  */
-var kVersion = 24;
+var kVersion = 25; // Vela: +1 for bookmarks-menu-button navbar migration
 
 /**
  * Buttons removed from built-ins by version they were removed. kVersion must be
@@ -707,6 +707,28 @@ var CustomizableUIInternal = {
         // We either found the right spot, or reached the end of the
         // placements, so insert here:
         navbarPlacements.splice(insertionPoint, 0, "downloads-button");
+      }
+    }
+
+    // Vela: bookmarks-menu-button lives in the navbar (next to the urlbar's
+    // right cluster) by default now; migrate saved toolbars so existing
+    // profiles get it too.
+    if (currentVersion < 25) {
+      let navbarPlacements = gSavedState.placements[CustomizableUI.AREA_NAVBAR];
+      if (
+        navbarPlacements &&
+        !navbarPlacements.includes("bookmarks-menu-button")
+      ) {
+        let insertionPoint = navbarPlacements.indexOf("urlbar-container");
+        // Deliberately iterate to 1 past the end of the array to insert at
+        // the end if need be.
+        while (++insertionPoint < navbarPlacements.length) {
+          let widget = navbarPlacements[insertionPoint];
+          if (!this.matchingSpecials(widget, "spring")) {
+            break;
+          }
+        }
+        navbarPlacements.splice(insertionPoint, 0, "bookmarks-menu-button");
       }
     }
 
