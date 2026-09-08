@@ -132,3 +132,4 @@ cd vela-src
 - **默认磁贴三重坑**：esr153 topsites 默认源优先级 = `browser.topsites.useRemoteSetting`(true 时从 Mozilla RemoteSettings 在线拉，本地改什么都没用) → `browser.newtabpage.activity-stream.default.sites` 覆写 pref（注意不是废弃的 browser.newtabpage.default.sites）→ DefaultSites.sys.mjs 硬编码（已 overlay 收编改大陆站）。出厂三件套：useRemoteSetting=false + override pref 设中文站 + DefaultSites 补丁（防御性）。
 - **遥测告知条**：datareporting.policy.firstRunURL 置空只防开页，顶部告知条要 `datareporting.policy.dataSubmissionPolicyBypassNotification=true`。
 - 磁贴标签首启显示主机名（zhihu/bilibili），访问一次后自动换成站点标题——正常行为。
+19. **dev 工作流的"恢复浏览状态"页**：dev 期间频繁强杀/重建实例 → profile 崩溃标记 → 每次启动弹恢复页。根治 = dev profile 的 user.js 写 `browser.sessionstore.resume_from_crash=false`（dev-run.sh 已自动化；user.js 优先级最高且只影响该 profile，正式分发不受影响）。终端里的 JS warning 是网页脚本自己的报错（B 站统计/淘宝风控），mach run 开发模式回显 stderr 所致，正式版无终端不可见，非产品缺陷。
