@@ -33,6 +33,7 @@ browser.jar:
         content/browser/blanktab.html                 (content/blanktab.html)
         content/browser/browser.js                    (content/browser.js)
         content/browser/vela-gestures.js             (content/vela-gestures.js)
+        content/browser/vela-superdrag.js            (content/vela-superdrag.js)
 *       content/browser/browser.xhtml                 (content/browser.xhtml)
         content/browser/browser-a11yUtils.js          (content/browser-a11yUtils.js)
         content/browser/browser-addons.js             (content/browser-addons.js)

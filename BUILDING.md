@@ -133,3 +133,9 @@ cd vela-src
 - **遥测告知条**：datareporting.policy.firstRunURL 置空只防开页，顶部告知条要 `datareporting.policy.dataSubmissionPolicyBypassNotification=true`。
 - 磁贴标签首启显示主机名（zhihu/bilibili），访问一次后自动换成站点标题——正常行为。
 19. **dev 工作流的"恢复浏览状态"页**：dev 期间频繁强杀/重建实例 → profile 崩溃标记 → 每次启动弹恢复页。根治 = dev profile 的 user.js 写 `browser.sessionstore.resume_from_crash=false`（dev-run.sh 已自动化；user.js 优先级最高且只影响该 profile，正式分发不受影响）。终端里的 JS warning 是网页脚本自己的报错（B 站统计/淘宝风控），mach run 开发模式回显 stderr 所致，正式版无终端不可见，非产品缺陷。
+
+### M3 超级拖拽（2026-09-07 夜）
+
+- 架构同手势：`vela-superdrag.js`（chrome 侧）+ data-URL frame script（内容进程）。注册点与手势同两处（global-scripts.js + jar.mn）。
+- 判定核心：`dragstart` 记录来源（`closest("a[href]")` → link，否则选区 text/plain → text，截断 512 字符）；`dragend` 且 `dropEffect === "none"`（没落到任何可放置目标）才触发——拖到收藏栏/地址栏等正常目标走原生拖放，不冲突。
+- 执行：link → `openLinkIn(url, "tab", {inBackground:true, triggeringPrincipal: browser.contentPrincipal})`；text → `Services.search.getDefault()` → `engine.getSubmission()` → `openTrustedLinkIn`（前台标签）。pref 开关 `vela.superdrag.enabled`。

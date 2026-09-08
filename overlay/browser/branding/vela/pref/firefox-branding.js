@@ -63,3 +63,6 @@ pref("browser.newtabpage.activity-stream.default.sites", "https://www.baidu.com/
 // 默认磁贴本地化：关闭 Mozilla RemoteSettings 在线磁贴源（既保证大陆默认站生效，
 // 也去掉首启对该服务器的网络依赖），改用上方 activity-stream.default.sites 本地清单
 pref("browser.topsites.useRemoteSetting", false);
+
+// Vela 超级拖拽（拖链接=后台标签；拖选中文本=默认引擎搜索）
+pref("vela.superdrag.enabled", true);
