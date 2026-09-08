@@ -146,3 +146,4 @@ cd vela-src
 - **"实验室"菜单（二次反击战）**：policies.json 的 DisableFirefoxLabs 在 esr153 schema **不存在**（FirefoxLabs/MoreFromMozilla 只是 UserMessaging 策略的子开关），非法策略被整文件拒绝→labs 复现。且 policies.json 存在本身触发"组织管理"横幅。终解：**撤 policies.json**（横幅消失）+ 代码级双补丁：preferences.js `visible: () => false`（新导航系统 line 434，旧路径 578 是无效补丁点）+ firefoxLabs.mjs `let shouldHide = true`（Nimbus 有配方也强制隐藏）。
 - **教训：菜单可见性有两套系统**（旧 getElementById.hidden + 新 SettingPaneManager visible 回调），只补一处无效。
 - **en-US 回退源已纳入 rebrand**（vela-src browser/locales/en-US + toolkit/locales/en-US），外科手术版 v3 脚本只动值不动键（首版粗放替换曾损坏 zh-CN 含 Firefox 的键名，已 git 还原重跑修复）。
+- **"Vela 帮助"入口移除**：preferences.xhtml 的 helpButton（slot=secondary-nav, support-page=preferences）整块删除，overlay 收编。
