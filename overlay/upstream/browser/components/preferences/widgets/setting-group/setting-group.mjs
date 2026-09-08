@@ -267,31 +267,6 @@ export class SettingGroup extends SettingElement {
     if (!this.config) {
       return "";
     }
-    if (this.config.l10nId === "github-sync-group") {
-      try {
-        dump("VELA_GS render items=" + (this.config.items || []).length +
-          " getSettingType=" + typeof this.getSetting + "\n");
-        for (const it of this.config.items || []) {
-          let st = null, err = "";
-          try { st = this.getSetting(it.id); } catch (ex) { err = String(ex); }
-          dump("VELA_GS item " + it.id + " setting=" + (st ? "yes" : "NULL") +
-            (err ? " ERR:" + err : "") +
-            (st ? " visible=" + String(st.visible) : "") + "\n");
-        }
-      } catch (ex) { dump("VELA_GS probe err " + ex + "\n"); }
-    }
-    if (this.config?.l10nId === "github-sync-group") {
-      (this.updateComplete || Promise.resolve()).then(() => {
-        const ctrls = this.querySelectorAll("setting-control");
-        let info = "VELA_GS DOM controls=" + ctrls.length;
-        ctrls.forEach(c => {
-          info += " [" + c.id + " hidden=" + c.hidden + " attrHidden=" +
-            c.hasAttribute("data-hidden-by-setting-group") + "]";
-        });
-        dump(info + " shadowLen=" +
-          (this.shadowRoot ? this.shadowRoot.innerHTML.length : -1) + "\n");
-      });
-    }
     let headingLevel = this.config.headingLevel;
     if (this.srdEnabled) {
       headingLevel = bumpHeadingLevelForSrd(headingLevel ?? 2, true);
