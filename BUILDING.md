@@ -139,3 +139,10 @@ cd vela-src
 - 架构同手势：`vela-superdrag.js`（chrome 侧）+ data-URL frame script（内容进程）。注册点与手势同两处（global-scripts.js + jar.mn）。
 - 判定核心：`dragstart` 记录来源（`closest("a[href]")` → link，否则选区 text/plain → text，截断 512 字符）；`dragend` 且 `dropEffect === "none"`（没落到任何可放置目标）才触发——拖到收藏栏/地址栏等正常目标走原生拖放，不冲突。
 - 执行：link → `openLinkIn(url, "tab", {inBackground:true, triggeringPrincipal: browser.contentPrincipal})`；text → `Services.search.getDefault()` → `engine.getSubmission()` → `openTrustedLinkIn`（前台标签）。pref 开关 `vela.superdrag.enabled`。
+
+### P0 品牌资产清零（2026-09-08 晨）
+
+- **狐狸贴图体系**（字符串扫描永远扫不到的图片残留）：设置页默认浏览器卡片 = `toolkit/themes/shared/illustrations/kit-happy.svg`/`kit-concerned.svg`（window.createDefaultBrowserConfig 的 imagesrc）；AI 控制图标 = `browser/themes/shared/preferences/fox-ai.svg`；侧栏 = `sidebar/foxy.svg`+`sidebar/firefox.svg`；账号头像 = `fxa/avatar-fox(.circle).svg`；私密页 = `privatebrowsing/pbm-logo.svg`+`fox-tail.svg`；tab 图标 = `icons/privateBrowsing.svg`（context-fill 适配主题）。全部已 overlay/upstream 收编替换为 Vela 帆体系。
+- **"实验室"菜单（二次反击战）**：policies.json 的 DisableFirefoxLabs 在 esr153 schema **不存在**（FirefoxLabs/MoreFromMozilla 只是 UserMessaging 策略的子开关），非法策略被整文件拒绝→labs 复现。且 policies.json 存在本身触发"组织管理"横幅。终解：**撤 policies.json**（横幅消失）+ 代码级双补丁：preferences.js `visible: () => false`（新导航系统 line 434，旧路径 578 是无效补丁点）+ firefoxLabs.mjs `let shouldHide = true`（Nimbus 有配方也强制隐藏）。
+- **教训：菜单可见性有两套系统**（旧 getElementById.hidden + 新 SettingPaneManager visible 回调），只补一处无效。
+- **en-US 回退源已纳入 rebrand**（vela-src browser/locales/en-US + toolkit/locales/en-US），外科手术版 v3 脚本只动值不动键（首版粗放替换曾损坏 zh-CN 含 Firefox 的键名，已 git 还原重跑修复）。

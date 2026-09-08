@@ -13,17 +13,6 @@ mkdir -p "$APP/distribution/extensions"
 cp "$XPI" "$APP/distribution/extensions/langpack-zh-CN@firefox.mozilla.org.xpi"
 echo "langpack 装入 → $APP/distribution/extensions/"
 
-# 出厂策略：禁用 Firefox Labs 与 More from Mozilla（两者由 Nimbus 配方驱动，
-# 会无视 pref 强制显示菜单项；企业策略是官方根治通道）
-cat > "$APP/distribution/policies.json" << 'POLICY'
-{
-  "policies": {
-    "DisableFirefoxLabs": true,
-    "DisableMoreFromMozilla": true
-  }
-}
-POLICY
-echo "policies.json 写入（DisableFirefoxLabs + DisableMoreFromMozilla）"
 
 # dev profile 自愈：mach build 会清掉 dist 里手工装的 xpi，若窗口期有启动，
 # profile 会留下"已装 distro 语言包"标记但扩展库中实际不存在，且不再重装
