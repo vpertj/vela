@@ -70,6 +70,41 @@ var VelaGitHub = {
     return { userCode: d.user_code, verificationUri: d.verification_uri };
   },
 
+  /** 原生系统通知（替代 window.alert——那个 "[JavaScript Application]" 弹窗
+   *  既 low 又是窗口模态，会把整窗交互挡死） */
+  _notify(text) {
+    try {
+      Cc["@mozilla.org/alerts-service;1"]
+        .getService(Ci.nsIAlertsService)
+        .showAlertNotification(
+          "chrome://branding/content/icon128.png",
+          "Vela",
+          text
+        );
+    } catch (ex) {}
+  },
+
+  /** 菜单项动态反映登录态：登录后"登录"项变灰显示账号，同步/退出解锁 */
+  _updateMenu() {
+    const loggedIn = this.status.loggedIn;
+    const login = document.getElementById("vela-menu-login");
+    const sync = document.getElementById("vela-menu-sync");
+    const logout = document.getElementById("vela-menu-logout");
+    if (login) {
+      login.setAttribute(
+        "label",
+        loggedIn ? "已登录：" + (this._profile?.login || "GitHub") : "登录 GitHub…"
+      );
+      login.disabled = loggedIn;
+    }
+    if (sync) {
+      sync.disabled = !loggedIn;
+    }
+    if (logout) {
+      logout.disabled = !loggedIn;
+    }
+  },
+
   /** 授权码 UI：自动复制剪贴板 + 系统通知 + 页内通知栏（替代阻塞式 alert） */
   _presentCode(code) {
     try {
@@ -293,6 +328,7 @@ var VelaGitHub = {
             this._token = null;
             this._profile = null;
           }
+          this._updateMenu();
         };
         Services.obs.addObserver(this._stateObserver, "vela-github:login");
         Services.obs.addObserver(this._stateObserver, "vela-github:logout");
@@ -644,23 +680,23 @@ var VelaGitHub = {
     (async () => {
       if (kind == "login") {
         if (this.status.loggedIn) {
-          window.alert("已登录：" + this.status.name);
+          this._notify("已登录 GitHub：" + this.status.name);
           return;
         }
         // 授权码 UI（剪贴板+通知栏）由 beginLogin 内部呈现
         await this.beginLogin();
       } else if (kind == "sync") {
         if (!this.status.loggedIn) {
-          window.alert("请先登录 GitHub 账号");
+          this._notify("请先登录 GitHub 账号");
           return;
         }
         await this.syncNow();
-        window.alert("收藏同步完成 ✓");
+        this._notify("收藏同步完成 ✓");
       } else if (kind == "logout") {
         await this.logout();
-        window.alert("已退出 GitHub 登录");
+        this._notify("已退出 GitHub 登录");
       }
-    })().catch(ex => window.alert("操作失败：" + ex.message));
+    })().catch(ex => this._notify("操作失败：" + ex.message));
   },
   /** 下拉菜单项编程式绑定（内联 oncommand 在 CUI 迁移节点上不可靠） */
   bindToolbarMenu() {
@@ -686,6 +722,7 @@ dump("VELA_GH loaded\n");
 // 解析——绑定与初始化都延到 load（菜单项此刻才存在）
 const velaBoot = () => {
   VelaGitHub.bindToolbarMenu();
+  VelaGitHub._updateMenu();
   Services.tm.dispatchToMainThread(() => VelaGitHub.init());
 };
 if (document.readyState == "complete") {

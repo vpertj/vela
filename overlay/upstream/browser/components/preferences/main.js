@@ -2853,7 +2853,7 @@ Preferences.addSetting({
       // 授权码 UI（剪贴板+通知栏）由 beginLogin 内部呈现
       await velaGitHub().beginLogin();
     } catch (ex) {
-      window.alert("GitHub 登录失败：" + ex.message);
+      velaGitHub()?._notify("GitHub 登录失败：" + ex.message);
     } finally {
       btn.disabled = false;
     }
@@ -2874,9 +2874,9 @@ Preferences.addSetting({
       const t = new Date(
         Services.prefs.getIntPref("vela.github.lastSync", Date.now())
       ).toLocaleString();
-      window.alert("收藏同步完成 ✓\n" + t);
+      velaGitHub()?._notify("收藏同步完成 ✓");
     } catch (ex) {
-      window.alert("同步失败：" + ex.message);
+      velaGitHub()?._notify("同步失败：" + ex.message);
     } finally {
       btn.disabled = false;
     }
