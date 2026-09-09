@@ -150,27 +150,45 @@ var VelaGitHub = {
 
   async _pollToken(d) {
     let interval = (d.interval || 5) * 1000;
-    while (true) {
-      await new Promise((ok, err) => {
-        Services.tm.setTimeout(ok, interval);
-        this._pollAbort?.signal.addEventListener("abort", () =>
-          err(Object.assign(new Error("aborted"), { name: "AbortError" }))
-        );
-      });
-      const res = await fetch("https://github.com/login/oauth/access_token", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          client_id: this.clientID,
-          device_code: d.device_code,
-          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-        }),
-        signal: this._pollAbort?.signal,
-      });
-      const j = await res.json();
+    const deadline = Date.now() + (d.expires_in ? d.expires_in * 1000 : 900000);
+    // 轮询必须皮实：网络抖动一次就退出会让用户"授权成功却未登录"
+    // （令牌从未入库）。只有用户取消/明确拒绝/超时才结束
+    while (Date.now() < deadline) {
+      try {
+        await new Promise((ok, err) => {
+          setTimeout(ok, interval);
+          this._pollAbort?.signal.addEventListener(
+            "abort",
+            () =>
+              err(Object.assign(new Error("aborted"), { name: "AbortError" })),
+            { once: true }
+          );
+        });
+      } catch (ex) {
+        throw ex; // 用户取消登录
+      }
+      let j = null;
+      try {
+        const res = await fetch("https://github.com/login/oauth/access_token", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            client_id: this.clientID,
+            device_code: d.device_code,
+            grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+          }),
+          signal: this._pollAbort?.signal,
+        });
+        j = await res.json();
+      } catch (ex) {
+        if (ex && ex.name == "AbortError") {
+          throw ex;
+        }
+        continue; // 网络抖动：不计失败，继续轮询
+      }
       if (j.access_token) {
         await this._storeToken(j.access_token);
         await this.refreshProfile();
@@ -195,6 +213,7 @@ var VelaGitHub = {
       }
       throw new Error("device flow error: " + (j.error || "unknown"));
     }
+    throw new Error("设备码已过期（15 分钟），请重新登录");
   },
 
   /** 令牌存取（Login Manager 加密存储） */
@@ -204,13 +223,13 @@ var VelaGitHub = {
       origin: this.LOGIN_MANAGER_ORIGIN,
     });
     for (const l of logins) {
-      Services.logins.removeLogin(l);
+      await Services.logins.removeLoginAsync(l);
     }
     const info = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(
       Ci.nsILoginInfo
     );
     info.init(this.LOGIN_MANAGER_ORIGIN, null, "", "github", token, "", "");
-    Services.logins.addLogin(info);
+    await Services.logins.addLoginAsync(info);
   },
 
   async _loadToken() {
@@ -234,7 +253,7 @@ var VelaGitHub = {
       origin: this.LOGIN_MANAGER_ORIGIN,
     });
     for (const l of logins) {
-      Services.logins.removeLogin(l);
+      await Services.logins.removeLoginAsync(l);
     }
     Services.obs.notifyObservers(null, "vela-github:logout");
   },
@@ -258,45 +277,83 @@ var VelaGitHub = {
   /** 启动时恢复登录态；已登录且开启同步则先同步一次 */
   async init() {
     try {
+      // 跨窗口登录态同步：任意窗口登录/登出，其他窗口立即跟着刷新
+      if (!this._stateObserver) {
+        this._stateObserver = (subject, topic) => {
+          if (topic == "vela-github:login") {
+            this._token = null;
+            this._loadToken()
+              .then(() => this.refreshProfile())
+              .then(() => {
+                this._addBookmarkObserver();
+                this._startPeriodicSync();
+              })
+              .catch(ex => Cu.reportError("VelaGitHub login obs: " + ex));
+          } else if (topic == "vela-github:logout") {
+            this._token = null;
+            this._profile = null;
+          }
+        };
+        Services.obs.addObserver(this._stateObserver, "vela-github:login");
+        Services.obs.addObserver(this._stateObserver, "vela-github:logout");
+      }
       await this._loadToken();
       if (this._token) {
         await this.refreshProfile();
+        this._addBookmarkObserver();
+        this._startPeriodicSync();
         Services.obs.notifyObservers(null, "vela-github:login");
         if (Services.prefs.getBoolPref(this.SYNC_ENABLED_PREF, true)) {
           await this.syncNow().catch(ex =>
             Cu.reportError("VelaGitHub startup sync: " + ex)
           );
         }
-        this._addBookmarkObserver();
       }
     } catch (ex) {
       Cu.reportError("VelaGitHub init: " + ex);
+    }
+    if (Services.env.get("VELA_SELFTEST") == "1") {
+      setTimeout(() => this._selfTest(), 0);
     }
   },
 
   /* ==================== 收藏同步引擎（M5a） ==================== */
 
   SYNC_ENABLED_PREF: "vela.github.sync.enabled",
+  SYNC_INTERVAL_PREF: "vela.github.sync.intervalSec",
+  REPO_PREF: "vela.github.sync.repo",
   LAST_SYNC_PREF: "vela.github.lastSync",
   REPO_NAME: "vela-sync",
-  REPO_PATH: "vela-sync/bookmarks.json",
+
+  get repoName() {
+    return Services.prefs.getStringPref(this.REPO_PREF, this.REPO_NAME);
+  },
+  get repoPath() {
+    return "bookmarks.json";
+  },
   _applying: false,
   _syncTimer: 0,
 
   /** 收藏变更 → 5s 防抖自动同步 */
   _addBookmarkObserver() {
-    if (this._bookmarkObserver) {
+    if (this._placesListener) {
       return;
     }
-    this._bookmarkObserver = {
-      onItemAdded: () => this._schedule(),
-      onItemRemoved: () => this._schedule(),
-      onItemChanged: () => this._schedule(),
-      onItemMoved: () => this._schedule(),
-      onBeginUpdateBatch: () => {},
-      onEndUpdateBatch: () => {},
+    // esr153：老 bookmarks.addObserver 已移除，改 PlacesObservers 事件流
+    this._placesListener = events => {
+      dump("VELA_GH obs " + events.map(e => e.type).join(",") + "\n");
+      this._schedule();
     };
-    PlacesUtils.bookmarks.addObserver(this._bookmarkObserver);
+    PlacesObservers.addListener(
+      [
+        "bookmark-added",
+        "bookmark-removed",
+        "bookmark-moved",
+        "bookmark-title-changed",
+        "bookmark-url-changed",
+      ],
+      this._placesListener
+    );
   },
 
   _schedule() {
@@ -311,6 +368,7 @@ var VelaGitHub = {
     }
     this._syncTimer = window.setTimeout(() => {
       this._syncTimer = 0;
+      dump("VELA_GH debounced autosync\n");
       this.syncNow().catch(ex => Cu.reportError("VelaGitHub autosync: " + ex));
     }, 5000);
   },
@@ -326,7 +384,7 @@ var VelaGitHub = {
   async _ensureRepo() {
     const owner = this._profile.login;
     const res = await fetch(
-      `${this.API}/repos/${owner}/${this.REPO_NAME}`,
+      `${this.API}/repos/${owner}/${this.repoName}`,
       { headers: this._apiHeaders }
     );
     if (res.ok) {
@@ -339,7 +397,7 @@ var VelaGitHub = {
       method: "POST",
       headers: { ...this._apiHeaders, "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: this.REPO_NAME,
+        name: this.repoName,
         private: true,
         auto_init: true,
         description: "Vela browser bookmarks sync (auto-created)",
@@ -350,29 +408,33 @@ var VelaGitHub = {
     }
   },
 
-  /** 收藏树 → 紧凑 JSON（folders + bookmarks） */
+  /** 收藏树 → 紧凑 JSON（folders + bookmarks）。
+   *  esr153 移除了 fetch() 无参全树接口，改用 promiseBookmarksTree：
+   *  节点属性 uri(URL 对象)/typeCode(数值)/children */
   async _serialize() {
-    const root = await PlacesUtils.bookmarks.fetch();
+    const root = await PlacesUtils.promiseBookmarksTree(
+      PlacesUtils.bookmarks.rootGuid
+    );
     const walk = n => {
       const o = { t: n.title || "" };
-      if (n.url) {
-        o.u = n.url.spec;
+      if (n.uri) {
+        o.u = n.uri;
       }
       if (n.dateAdded) {
         o.d = Number(n.dateAdded);
       }
       if (n.children) {
-        const kids = n.children
+        const kids = (n.children || [])
           .filter(
             k =>
-              k.type == PlacesUtils.bookmarks.TYPE_FOLDER ||
-              k.type == PlacesUtils.bookmarks.TYPE_BOOKMARK
+              k.typeCode == PlacesUtils.bookmarks.TYPE_FOLDER ||
+              k.typeCode == PlacesUtils.bookmarks.TYPE_BOOKMARK
           )
           .map(walk);
         if (kids.length) {
           o.c = kids;
         }
-        o.f = n.type == PlacesUtils.bookmarks.TYPE_FOLDER;
+        o.f = n.typeCode == PlacesUtils.bookmarks.TYPE_FOLDER;
       }
       return o;
     };
@@ -380,7 +442,7 @@ var VelaGitHub = {
       v: 1,
       at: Date.now(),
       buckets: (root.children || [])
-        .filter(c => c.type == PlacesUtils.bookmarks.TYPE_FOLDER)
+        .filter(c => c.typeCode == PlacesUtils.bookmarks.TYPE_FOLDER)
         .map(walk),
     };
   },
@@ -390,11 +452,13 @@ var VelaGitHub = {
     if (!remote || !remote.buckets) {
       return;
     }
-    const localRoot = await PlacesUtils.bookmarks.fetch();
+    const localRoot = await PlacesUtils.promiseBookmarksTree(
+      PlacesUtils.bookmarks.rootGuid
+    );
     const localUrls = new Set();
     const collect = n => {
-      if (n.url) {
-        localUrls.add(n.url.spec);
+      if (n.uri) {
+        localUrls.add(n.uri);
       }
       (n.children || []).forEach(collect);
     };
@@ -415,7 +479,7 @@ var VelaGitHub = {
         const localKids = (localNode && localNode.children) || [];
         for (const kid of remoteNode.c || []) {
           if (kid.c) {
-            const localKid = localKids.find(k => (k.title || "") === kid.t && k.type == PlacesUtils.bookmarks.TYPE_FOLDER);
+            const localKid = localKids.find(k => (k.title || "") === kid.t && k.typeCode == PlacesUtils.bookmarks.TYPE_FOLDER);
             await mergeFolder(kid, localKid, guid);
           } else if (kid.u && !localUrls.has(kid.u)) {
             await PlacesUtils.bookmarks.insert({
@@ -439,8 +503,21 @@ var VelaGitHub = {
     }
   },
 
-  /** 同步主流程：建仓 → 拉取合并 → 推送 */
+  /** 同步主流程：建仓 → 拉取合并 → 推送（防重入：观察者与周期器并发时跳过） */
   async syncNow() {
+    if (this._syncing) {
+      dump("VELA_GH sync skip (in-flight)\n");
+      return;
+    }
+    this._syncing = true;
+    try {
+      await this._syncNowInner();
+    } finally {
+      this._syncing = false;
+    }
+  },
+
+  async _syncNowInner() {
     const token = await this._loadToken();
     if (!token) {
       throw new Error("not logged in");
@@ -450,10 +527,13 @@ var VelaGitHub = {
     }
     const owner = this._profile.login;
     await this._ensureRepo();
-    const fileUrl = `${this.API}/repos/${owner}/${this.REPO_NAME}/contents/${this.REPO_PATH}`;
+    const fileUrl = `${this.API}/repos/${owner}/${this.repoName}/contents/${this.repoPath}`;
     let sha = null,
       remote = null;
-    const head = await fetch(fileUrl, { headers: this._apiHeaders });
+    const head = await fetch(fileUrl, {
+      headers: this._apiHeaders,
+      cache: "no-store",
+    });
     if (head.ok) {
       const j = await head.json();
       sha = j.sha;
@@ -488,6 +568,73 @@ var VelaGitHub = {
     }
     Services.prefs.setIntPref(this.LAST_SYNC_PREF, Date.now());
     Services.obs.notifyObservers(null, "vela-github:synced");
+  },
+
+  /** 周期同步（默认 15 分钟；观察者负责"变化即同步"，这里是兜底） */
+  _startPeriodicSync() {
+    if (this._periodicTimer) {
+      window.clearTimeout(this._periodicTimer);
+    }
+    const sec = Math.max(
+      5,
+      Services.prefs.getIntPref(this.SYNC_INTERVAL_PREF, 900)
+    );
+    this._periodicTimer = window.setTimeout(() => {
+      this._periodicTimer = 0;
+      if (this.status.loggedIn) {
+        this.syncNow().catch(ex =>
+          Cu.reportError("VelaGitHub periodic sync: " + ex)
+        );
+      }
+      this._startPeriodicSync();
+    }, sec * 1000);
+  },
+
+  /** 自动化自测（VELA_SELFTEST=1 触发）：登录态→手动同步→自动同步→周期同步。
+   *  用独立测试仓 vela-sync-selftest，不碰用户真实 vela-sync */
+  async _selfTest() {
+    const t = m => dump("VELA_TEST " + m + "\n");
+    try {
+      if (typeof gBrowser == "undefined" || !gBrowser) {
+        return; // 只在主浏览器窗口跑一次（隐藏窗口/多窗口会重复触发）
+      }
+      const token = Services.env.get("VELA_TEST_TOKEN");
+      if (!token) {
+        t("FAIL no VELA_TEST_TOKEN");
+        return;
+      }
+      Services.prefs.setStringPref(this.REPO_PREF, "vela-sync-selftest");
+      t("start");
+      await this._storeToken(token);
+      await this.refreshProfile();
+      t("login " + (this.status.loggedIn ? "OK user=" + this.status.name : "FAIL"));
+      this._addBookmarkObserver();
+      await this.syncNow();
+      t("manual-sync OK");
+      await PlacesUtils.bookmarks.insert({
+        parentGuid: PlacesUtils.bookmarks.menuGuid,
+        title: "Vela 自测",
+        url: "https://example.com/vela-selftest",
+      });
+      await new Promise(ok => setTimeout(ok, 12000));
+      const owner = this._profile.login;
+      const res = await fetch(
+        `${this.API}/repos/${owner}/${this.repoName}/contents/${this.repoPath}`,
+        { headers: this._apiHeaders, cache: "no-store" }
+      );
+      const j = await res.json();
+      const text = decodeURIComponent(escape(atob(j.content.replace(/\n/g, ""))));
+      t(text.includes("vela-selftest") ? "autosync OK" : "autosync FAIL: marker missing");
+      Services.prefs.setIntPref(this.SYNC_INTERVAL_PREF, 5);
+      this._startPeriodicSync();
+      const before = Services.prefs.getIntPref(this.LAST_SYNC_PREF, 0);
+      await new Promise(ok => setTimeout(ok, 16000));
+      const after = Services.prefs.getIntPref(this.LAST_SYNC_PREF, 0);
+      t(after > before ? "interval-sync OK" : "interval-sync FAIL");
+      t("PASS");
+    } catch (ex) {
+      t("FAIL " + ex + " | stack=" + (ex.stack || "").replace(/\n/g, " <- ").slice(0, 400));
+    }
   },
 
   /** 顶栏登录按钮菜单动作 */
