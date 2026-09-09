@@ -54,6 +54,7 @@ var VelaGitHub = {
       throw new Error("device code request failed: " + res.status);
     }
     const d = await res.json();
+    dump("VELA_GH device code ready: " + d.user_code + "\n");
     // 打开授权页（用本浏览器）
     openTrustedLinkIn(d.verification_uri, "tab");
     this._pollAbort = new AbortController();
@@ -116,11 +117,9 @@ var VelaGitHub = {
   /** 令牌存取（Login Manager 加密存储） */
   async _storeToken(token) {
     this._token = token;
-    const logins = await Services.logins.findLogins(
-      this.LOGIN_MANAGER_ORIGIN,
-      null,
-      ""
-    );
+    const logins = await Services.logins.searchLoginsAsync({
+      origin: this.LOGIN_MANAGER_ORIGIN,
+    });
     for (const l of logins) {
       Services.logins.removeLogin(l);
     }
@@ -135,11 +134,9 @@ var VelaGitHub = {
     if (this._token) {
       return this._token;
     }
-    const logins = await Services.logins.findLogins(
-      this.LOGIN_MANAGER_ORIGIN,
-      null,
-      ""
-    );
+    const logins = await Services.logins.searchLoginsAsync({
+      origin: this.LOGIN_MANAGER_ORIGIN,
+    });
     if (logins.length) {
       this._token = logins[0].password;
     }
@@ -150,11 +147,9 @@ var VelaGitHub = {
     this.cancelLogin();
     this._token = null;
     this._profile = null;
-    const logins = await Services.logins.findLogins(
-      this.LOGIN_MANAGER_ORIGIN,
-      null,
-      ""
-    );
+    const logins = await Services.logins.searchLoginsAsync({
+      origin: this.LOGIN_MANAGER_ORIGIN,
+    });
     for (const l of logins) {
       Services.logins.removeLogin(l);
     }
@@ -414,7 +409,8 @@ var VelaGitHub = {
 
   /** 顶栏登录按钮菜单动作 */
   toolbarAction(kind, event) {
-    event.stopPropagation();
+    dump("VELA_GH action=" + kind + "\n");
+    event?.stopPropagation();
     (async () => {
       if (kind == "login") {
         if (this.status.loggedIn) {
@@ -436,9 +432,29 @@ var VelaGitHub = {
       }
     })().catch(ex => window.alert("操作失败：" + ex.message));
   },
+  /** 下拉菜单项编程式绑定（内联 oncommand 在 CUI 迁移节点上不可靠） */
+  bindToolbarMenu() {
+    const bindings = [
+      ["vela-menu-login", "login"],
+      ["vela-menu-sync", "sync"],
+      ["vela-menu-logout", "logout"],
+    ];
+    for (const [id, kind] of bindings) {
+      document
+        .getElementById(id)
+        ?.addEventListener("command", e => this.toolbarAction(kind, e));
+    }
+  },
 };
 
-window.addEventListener(
-  () => Services.tm.dispatchToMainThread(() => VelaGitHub.init()),
-  { once: true }
-);
+dump("VELA_GH loaded\n");
+VelaGitHub.bindToolbarMenu();
+if (document.readyState == "complete") {
+  Services.tm.dispatchToMainThread(() => VelaGitHub.init());
+} else {
+  window.addEventListener(
+    "load",
+    () => Services.tm.dispatchToMainThread(() => VelaGitHub.init()),
+    { once: true }
+  );
+}

@@ -2830,9 +2830,17 @@ referrals-link2 =
     .label = 分享 { -brand-product-name }
 
 ## Vela GitHub 同步
-github-sync-group = GitHub 同步
-github-login-card = 登录 GitHub 账号，收藏将自动同步到你自己的私有仓库
-github-login-button = 登录 GitHub
-github-manage-card = GitHub 同步已就绪，收藏改动会自动同步
-github-sync-now-button = 立即同步
-github-logout-button = 退出登录
+github-sync-group =
+    .label = GitHub 同步
+github-login-card =
+    .label = 登录 GitHub 账号
+    .description = 收藏将自动同步到你自己的 GitHub 私有仓库
+github-login-button =
+    .label = 登录 GitHub
+github-manage-card =
+    .label = GitHub 同步已就绪
+    .description = 收藏改动会自动同步到你的私有仓库
+github-sync-now-button =
+    .label = 立即同步
+github-logout-button =
+    .label = 退出登录

@@ -21,3 +21,10 @@ PROFILE="$OBJ/tmp/profile-default"
 if [ -f "$PROFILE/prefs.js" ]; then
   sed -i '' '/installedDistroAddon.langpack-zh-CN/d' "$PROFILE/prefs.js"
 fi
+
+# profile 侧曾在首启时把 distro 语言包"拷贝"进自己的 extensions/，此后永远
+# 用这份旧拷贝——更新 app 内语言包对它无效（fluent 文案陈旧等诡异问题的
+# 根源）。每次装入都删掉拷贝，让下次启动从 app 内置分发重新注册。
+if [ -d "$PROFILE/extensions" ]; then
+  rm -f "$PROFILE/extensions/langpack-zh-CN@firefox.mozilla.org.xpi"
+fi

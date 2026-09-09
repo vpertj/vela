@@ -2785,77 +2785,72 @@ let AppFileHandler = (function () {
 
 /* ==================== Vela GitHub 同步 ==================== */
 function createGitHubSyncConfig() {
+  // 条目一律用顶层叶控件（placeholder-message/moz-box-button/moz-box-item），
+  // l10n 必须写 .label/.description 属性形式——值形式会让 Fluent 清空卡片
+  // 子元素（坑 28）。登录态切换用每项的 visible 回调。
+  const loggedIn = () => !!(window.VelaGitHub && VelaGitHub.status.loggedIn);
   return {
     inProgress: true,
     l10nId: "github-sync-group",
     headingLevel: 2,
+    iconSrc: "chrome://branding/content/github-mark.svg",
     items: [
       {
-        id: "githubLoggedOutGroup",
-        control: "moz-box-group",
-        items: [
-          {
-            id: "githubLoggedOutMsg",
-            control: "placeholder-message",
-            l10nId: "github-login-card",
-          },
-          {
-            id: "githubLoginButton",
-            control: "moz-box-button",
-            l10nId: "github-login-button",
-          },
-        ],
+        id: "githubLoggedOutMsg",
+        control: "placeholder-message",
+        l10nId: "github-login-card",
+        visible: () => !loggedIn(),
       },
       {
-        id: "githubLoggedInGroup",
-        control: "moz-box-group",
-        items: [
-          {
-            id: "githubSyncStatus",
-            control: "moz-box-item",
-            l10nId: "github-manage-card",
-            iconSrc: "chrome://branding/content/about-logo.svg",
-            controlAttrs: {
-              layout: "large-icon",
-            },
-          },
-          {
-            id: "githubSyncNowButton",
-            control: "moz-box-button",
-            l10nId: "github-sync-now-button",
-          },
-          {
-            id: "githubLogoutButton",
-            control: "moz-box-button",
-            l10nId: "github-logout-button",
-          },
-        ],
+        id: "githubLoginButton",
+        control: "moz-box-button",
+        l10nId: "github-login-button",
+        visible: () => !loggedIn(),
+      },
+      {
+        id: "githubSyncStatus",
+        control: "moz-box-item",
+        l10nId: "github-manage-card",
+        iconSrc: "chrome://branding/content/github-mark.svg",
+        controlAttrs: {
+          layout: "large-icon",
+        },
+        visible: loggedIn,
+      },
+      {
+        id: "githubSyncNowButton",
+        control: "moz-box-button",
+        l10nId: "github-sync-now-button",
+        visible: loggedIn,
+      },
+      {
+        id: "githubLogoutButton",
+        control: "moz-box-button",
+        l10nId: "github-logout-button",
+        visible: loggedIn,
       },
     ],
   };
 }
 
-Preferences.addSetting({
-  id: "githubLoggedOutGroup",
-  visible: () => !(window.VelaGitHub && VelaGitHub.status.loggedIn),
-});
+// 可见性必须挂在 setting 上（config 条目上的 visible 不被读取）
+// VelaGitHub 挂在浏览器主窗口上（global-scripts），preferences 页签的 window
+// 不是它——统一经窗口管理器取（VelaGitHub is not defined 坑）
+const velaGitHub = () =>
+  Services.wm.getMostRecentWindow("navigator:browser")?.VelaGitHub;
+const velaLoggedIn = () => !!velaGitHub()?.status.loggedIn;
 Preferences.addSetting({
   id: "githubLoggedOutMsg",
-});
-Preferences.addSetting({
-  id: "githubSyncStatus",
-});
-Preferences.addSetting({
-  id: "githubLoggedInGroup",
-  visible: () => !!(window.VelaGitHub && VelaGitHub.status.loggedIn),
+  visible: () => !velaLoggedIn(),
 });
 Preferences.addSetting({
   id: "githubLoginButton",
+  visible: () => !velaLoggedIn(),
   onUserClick: async e => {
     const btn = e.target;
     btn.disabled = true;
     try {
-      const { userCode } = await VelaGitHub.beginLogin();
+      const { userCode } = await velaGitHub().beginLogin();
       window.alert("请在已打开的 GitHub 页面输入授权码：\n" + userCode);
     } catch (ex) {
       window.alert("GitHub 登录失败：" + ex.message);
@@ -2865,12 +2860,17 @@ Preferences.addSetting({
   },
 });
 Preferences.addSetting({
+  id: "githubSyncStatus",
+  visible: velaLoggedIn,
+});
+Preferences.addSetting({
   id: "githubSyncNowButton",
+  visible: velaLoggedIn,
   onUserClick: async e => {
     const btn = e.target;
     btn.disabled = true;
     try {
-      await VelaGitHub.syncNow();
+      await velaGitHub().syncNow();
       const t = new Date(
         Services.prefs.getIntPref("vela.github.lastSync", Date.now())
       ).toLocaleString();
@@ -2884,7 +2884,8 @@ Preferences.addSetting({
 });
 Preferences.addSetting({
   id: "githubLogoutButton",
+  visible: velaLoggedIn,
   onUserClick: async () => {
-    await VelaGitHub.logout();
+    await velaGitHub().logout();
   },
 });

@@ -820,7 +820,8 @@ SettingGroupManager.registerGroups({
   githubSync: window.createGitHubSyncConfig(),
   accountDisabled: {
     inProgress: true,
-    hidden: accountsEnabled,
+    // Vela: FxA 退役后此占位卡（含 mozilla 图标）不再展示，GitHub 卡片顶上
+    hidden: true,
     items: [
       {
         id: "fxaAccountDisabled",

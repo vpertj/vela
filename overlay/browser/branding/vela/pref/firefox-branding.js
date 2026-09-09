@@ -73,3 +73,7 @@ pref("vela.bookmarks.hoverOpen", true);
 
 // GitHub OAuth App（Vela）——Device Flow 登录与收藏同步
 pref("vela.github.clientId", "Ov23liI2QERC3AZu8mdn");
+
+// FxA 火狐账号体系退役：账号与同步全面切换到 GitHub（官方企业级开关，
+// 等同 DisableFirefoxAccounts 策略效果但不触发“组织管理”横幅）
+pref("identity.fxaccounts.enabled", false);

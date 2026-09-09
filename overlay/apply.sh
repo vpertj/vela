@@ -25,6 +25,49 @@ if [ -d "$VELA/overlay/l10n" ]; then
   rsync -a "$VELA/overlay/l10n/" "$HOME/.mozbuild/l10n-central/zh-CN/"
 fi
 
+# en-US 回退源的 GitHub 设置页文案（fluent 属性形式；值形式会让 Fluent
+# 清空卡片子元素——坑 28）。幂等：仅在键缺失或为值形式时重写
+python3 - "$SRC/browser/locales/en-US/browser/preferences/preferences.ftl" << 'PYFTL'
+import sys
+p = sys.argv[1]
+correct = """
+github-sync-group =
+    .label = GitHub Sync
+github-login-card =
+    .label = Sign in with GitHub
+    .description = Bookmarks sync to your own private GitHub repository
+github-login-button =
+    .label = Sign in with GitHub
+github-manage-card =
+    .label = GitHub sync is ready
+    .description = Bookmark changes sync automatically
+github-sync-now-button =
+    .label = Sync now
+github-logout-button =
+    .label = Sign out
+"""
+try:
+    s = open(p, encoding="utf-8").read()
+except FileNotFoundError:
+    sys.exit(0)
+lines = correct.strip().split("\n")
+# 删除旧的 github-* 条目（连续块或散落），再追加正确块
+out, skip = [], False
+for line in s.split("\n"):
+    if line.startswith("github-"):
+        skip = True
+        continue
+    if skip:
+        if line.startswith(" ") or line == "":
+            continue
+        skip = False
+    out.append(line)
+s2 = "\n".join(out).rstrip("\n") + "\n\n" + correct.strip() + "\n"
+if s2 != s:
+    open(p, "w", encoding="utf-8").write(s2)
+    print("en-US github ftl rewritten")
+PYFTL
+
 # l10n 品牌重命名（幂等；重新 fetch l10n 树后由这里自动补跑）
 "$VELA/scripts/l10n-rebrand.sh"
 

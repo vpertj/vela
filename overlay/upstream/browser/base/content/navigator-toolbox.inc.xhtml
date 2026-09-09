@@ -484,10 +484,10 @@
                      tooltip="dynamic-shortcut-tooltip"
                      cui-areatype="toolbar">
         <menupopup id="vela-login-popup">
-          <menuitem label="登录 GitHub…" oncommand="VelaGitHub.toolbarAction('login', event);"/>
-          <menuitem label="立即同步收藏" oncommand="VelaGitHub.toolbarAction('sync', event);"/>
+          <menuitem id="vela-menu-login" label="登录 GitHub…"/>
+          <menuitem id="vela-menu-sync" label="立即同步收藏"/>
           <menuseparator/>
-          <menuitem label="退出 GitHub 登录" oncommand="VelaGitHub.toolbarAction('logout', event);"/>
+          <menuitem id="vela-menu-logout" label="退出 GitHub 登录"/>
         </menupopup>
       </toolbarbutton>
 
