@@ -733,13 +733,26 @@ var CustomizableUIInternal = {
     }
 
     // Vela: replace the Firefox-account toolbar button with the GitHub login
-    // button in saved toolbars (in place, keeping the position).
+    // button in saved toolbars (in place, keeping the position). Profiles
+    // whose saved state never contained the fxa button still get the login
+    // button inserted after downloads-button, so every old profile sees it.
     if (currentVersion < 26) {
       for (let placements of Object.values(gSavedState.placements)) {
         let fxaIndex = placements.indexOf("fxa-toolbar-menu-button");
         if (fxaIndex != -1) {
           placements[fxaIndex] = "vela-login-button";
         }
+      }
+      let navbarPlacements = gSavedState.placements[CustomizableUI.AREA_NAVBAR];
+      let hasLoginButton = Object.values(gSavedState.placements).some(p =>
+        p.includes("vela-login-button")
+      );
+      if (navbarPlacements && !hasLoginButton) {
+        let insertionPoint = navbarPlacements.indexOf("downloads-button");
+        if (insertionPoint == -1) {
+          insertionPoint = navbarPlacements.length - 1;
+        }
+        navbarPlacements.splice(insertionPoint + 1, 0, "vela-login-button");
       }
     }
 

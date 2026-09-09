@@ -322,3 +322,13 @@
 #fxa-toolbar-menu-button {
   display: none !important;
 }
+
+/* Vela GitHub 登录按钮：GitHub mark，context-fill 跟随工具栏前景色。
+   没有这条规则时按钮在纯图标工具栏里渲染成透明空白（看不见但占位）。 */
+#vela-login-button {
+  list-style-image: url("chrome://branding/content/github-mark.svg");
+}
+#vela-login-button .toolbarbutton-icon {
+  -moz-context-properties: fill;
+}
+
