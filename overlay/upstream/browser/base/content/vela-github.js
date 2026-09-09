@@ -49,6 +49,8 @@ var VelaGitHub = {
         client_id: this.clientID,
         scope: "repo read:user",
       }),
+      // 大陆网络 github 可能长时间挂起：15s 超时给明确报错，不做无声等待
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) {
       throw new Error("device code request failed: " + res.status);
