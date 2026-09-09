@@ -2850,8 +2850,8 @@ Preferences.addSetting({
     const btn = e.target;
     btn.disabled = true;
     try {
-      const { userCode } = await velaGitHub().beginLogin();
-      window.alert("请在已打开的 GitHub 页面输入授权码：\n" + userCode);
+      // 授权码 UI（剪贴板+通知栏）由 beginLogin 内部呈现
+      await velaGitHub().beginLogin();
     } catch (ex) {
       window.alert("GitHub 登录失败：" + ex.message);
     } finally {

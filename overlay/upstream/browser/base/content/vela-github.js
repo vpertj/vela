@@ -59,6 +59,7 @@ var VelaGitHub = {
     dump("VELA_GH device code ready: " + d.user_code + "\n");
     // 打开授权页（用本浏览器）
     openTrustedLinkIn(d.verification_uri, "tab");
+    this._presentCode(d.user_code);
     this._pollAbort = new AbortController();
     // 后台轮询 token（interval 秒，遇 slow_down 顺延）
     this._pollToken(d).catch(ex => {
@@ -67,6 +68,77 @@ var VelaGitHub = {
       }
     });
     return { userCode: d.user_code, verificationUri: d.verification_uri };
+  },
+
+  /** 授权码 UI：自动复制剪贴板 + 系统通知 + 页内通知栏（替代阻塞式 alert） */
+  _presentCode(code) {
+    try {
+      Cc["@mozilla.org/widget/clipboardhelper;1"]
+        .getService(Ci.nsIClipboardHelper)
+        .copyString(code);
+    } catch (ex) {}
+    try {
+      Cc["@mozilla.org/alerts-service;1"]
+        .getService(Ci.nsIAlertsService)
+        .showAlertNotification(
+          "chrome://branding/content/icon128.png",
+          "Vela GitHub 登录",
+          "授权码 " + code + " 已复制到剪贴板，粘贴到 GitHub 页面即可"
+        );
+    } catch (ex) {}
+    const showBar = () => {
+      try {
+        const nb = gBrowser.getNotificationBox(this._codeBarBrowser);
+        nb.appendNotification(
+          "vela-github-code",
+          {
+            label:
+              "GitHub 授权码 " + code + " 已复制到剪贴板——在 GitHub 页面粘贴即可",
+            priority: nb.PRIORITY_WARNING_HIGH,
+          },
+          [
+            {
+              label: "复制授权码",
+              callback: () => {
+                Cc["@mozilla.org/widget/clipboardhelper;1"]
+                  .getService(Ci.nsIClipboardHelper)
+                  .copyString(code);
+              },
+            },
+          ]
+        );
+      } catch (ex) {
+        Cu.reportError("VelaGitHub code bar: " + ex);
+      } finally {
+        dump("VELA_GH bar shown\n");
+      }
+    };
+    const browser = gBrowser.getBrowserForTab(gBrowser.selectedTab);
+    showBar();
+    // 页面导航会清空通知栏（device→login 重定向），每次顶层页面加载完成后
+    // 重挂，让授权码在登录全程都可见。注意 browser 元素上挂 "load" 收不到
+    // 内容页加载事件——必须用 WebProgressListener
+    if (this._codeBarBrowser !== browser) {
+      if (this._codeBarBrowser && this._codeBarWPL) {
+        this._codeBarBrowser.removeProgressListener(this._codeBarWPL);
+      }
+      this._codeBarWPL = {
+        QueryInterface: ChromeUtils.generateQI([
+          "nsIWebProgressListener",
+          "nsISupportsWeakReference",
+        ]),
+        onStateChange: (wp, req, flags, status) => {
+          if (
+            flags & Ci.nsIWebProgressListener.STATE_STOP &&
+            flags & Ci.nsIWebProgressListener.STATE_IS_NETWORK
+          ) {
+            showBar();
+          }
+        },
+      };
+      browser.addProgressListener(this._codeBarWPL);
+      this._codeBarBrowser = browser;
+    }
   },
 
   cancelLogin() {
@@ -102,6 +174,15 @@ var VelaGitHub = {
       if (j.access_token) {
         await this._storeToken(j.access_token);
         await this.refreshProfile();
+        try {
+          Cc["@mozilla.org/alerts-service;1"]
+            .getService(Ci.nsIAlertsService)
+            .showAlertNotification(
+              "chrome://branding/content/icon128.png",
+              "Vela GitHub 登录",
+              "已登录：" + (this._profile?.login || "GitHub 账号")
+            );
+        } catch (ex) {}
         Services.obs.notifyObservers(null, "vela-github:login");
         return;
       }
@@ -419,8 +500,8 @@ var VelaGitHub = {
           window.alert("已登录：" + this.status.name);
           return;
         }
-        const { userCode } = await this.beginLogin();
-        window.alert("请在已打开的 GitHub 页面输入授权码：\n" + userCode);
+        // 授权码 UI（剪贴板+通知栏）由 beginLogin 内部呈现
+        await this.beginLogin();
       } else if (kind == "sync") {
         if (!this.status.loggedIn) {
           window.alert("请先登录 GitHub 账号");

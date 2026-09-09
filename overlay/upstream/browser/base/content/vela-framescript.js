@@ -6,7 +6,6 @@
  * Vela frame script（内容进程侧，chrome:// 真实文件，随浏览器全局注入）
  * - 鼠标手势捕获（右键划动）
  * - 超级拖拽捕获（拖链接/拖选中文本，8px 防手抖）
- * - 启航页磁贴点击 → 新标签
  * 注意：frame script 沙箱没有 window/location 全局，用 content / content.location。
  */
 
@@ -121,22 +120,4 @@
     dragged = null;
   }, true);
 
-  /* ---------- 启航页磁贴：点击 → 新标签 ---------- */
-  addEventListener("click", e => {
-    if (!isStartPage()) return;
-    if (e.button != 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
-      return;
-    const t = e.target.closest && e.target.closest(".top-site-outer");
-    if (!t) return;
-    const a = t.matches("a[href]") ? t : t.querySelector("a[href]");
-    const href = a && a.href;
-    if (!href || !/^https?:/.test(href)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    sendAsyncMessage("Vela:SuperDrag", {
-      kind: "link",
-      value: href,
-      foreground: true,
-    });
-  }, true);
 })();
