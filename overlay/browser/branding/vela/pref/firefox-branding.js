@@ -67,6 +67,10 @@ pref("browser.topsites.useRemoteSetting", false);
 // Vela 超级拖拽（拖链接=后台标签；拖选中文本=默认引擎搜索）
 pref("vela.superdrag.enabled", true);
 
+// 鼠标手势出厂关闭（用户反馈轨迹画线干扰正常使用）。想要可在 about:config
+// 把 vela.gestures.enabled 改 true
+pref("vela.gestures.enabled", false);
+
 // Vela 收藏交互：书签菜单按钮常驻顶栏（悬停展开下拉），收藏栏默认不显示
 pref("browser.toolbars.bookmarks.visibility", "never");
 pref("vela.bookmarks.hoverOpen", true);

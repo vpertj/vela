@@ -26,8 +26,16 @@
     gArmed = false;
   const G_TH = 14;
 
+  const gesturesEnabled = () => {
+    try {
+      return Services.prefs.getBoolPref("vela.gestures.enabled", true);
+    } catch (ex) {
+      return true;
+    }
+  };
+
   addEventListener("mousedown", e => {
-    if (e.button != 2) return;
+    if (e.button != 2 || !gesturesEnabled()) return;
     gStart = { x: e.screenX, y: e.screenY };
     gPath = [{ x: e.clientX, y: e.clientY }];
     gDirs = "";
