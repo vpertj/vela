@@ -441,22 +441,27 @@ var VelaGitHub = {
       ["vela-menu-sync", "sync"],
       ["vela-menu-logout", "logout"],
     ];
+    let bound = 0;
     for (const [id, kind] of bindings) {
-      document
-        .getElementById(id)
-        ?.addEventListener("command", e => this.toolbarAction(kind, e));
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("command", e => this.toolbarAction(kind, e));
+        bound++;
+      }
     }
+    dump("VELA_GH menu bound " + bound + "/3\n");
   },
 };
 
 dump("VELA_GH loaded\n");
-VelaGitHub.bindToolbarMenu();
-if (document.readyState == "complete") {
+// global-scripts.js 在 browser.xhtml 头部执行，toolbox 标记（含菜单项）尚未
+// 解析——绑定与初始化都延到 load（菜单项此刻才存在）
+const velaBoot = () => {
+  VelaGitHub.bindToolbarMenu();
   Services.tm.dispatchToMainThread(() => VelaGitHub.init());
+};
+if (document.readyState == "complete") {
+  velaBoot();
 } else {
-  window.addEventListener(
-    "load",
-    () => Services.tm.dispatchToMainThread(() => VelaGitHub.init()),
-    { once: true }
-  );
+  window.addEventListener("load", velaBoot, { once: true });
 }

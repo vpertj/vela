@@ -25,7 +25,12 @@ var VelaGestures = {
     }
     // window 级 messageManager：注册 frame script 到本窗口全部浏览器（含后续新建）
     const mm = window.messageManager;
-    mm.loadFrameScript(this.FRAME_SCRIPT, true);
+    // 手势与超级拖拽共用同一 frame script，只注入一次（双注入=点击/手势
+    // 监听器翻倍：磁贴一次点击开两个标签、手势动作执行两次）
+    if (!mm.__velaFramescriptLoaded) {
+      mm.__velaFramescriptLoaded = true;
+      mm.loadFrameScript(this.FRAME_SCRIPT, true);
+    }
     mm.addMessageListener("Vela:GestureStart", this);
     mm.addMessageListener("Vela:GestureMove", this);
     mm.addMessageListener("Vela:GestureEnd", this);
