@@ -106,6 +106,23 @@ var VelaGitHub = {
     return { userCode: d.user_code, verificationUri: d.verification_uri };
   },
 
+  /** 页内信息条：任何必须被用户看到的反馈都走这里（系统通知会被吞） */
+  _showInfoBar(message) {
+    try {
+      const nb = gBrowser.getNotificationBox(gBrowser.selectedBrowser);
+      nb.appendNotification(
+        "vela-github-info",
+        {
+          label: message,
+          priority: nb.PRIORITY_INFO_MEDIUM,
+        },
+        []
+      );
+    } catch (ex) {
+      Cu.reportError("VelaGitHub info bar: " + ex);
+    }
+  },
+
   /** 原生系统通知（替代 window.alert——那个 "[JavaScript Application]" 弹窗
    *  既 low 又是窗口模态，会把整窗交互挡死） */
   _notify(text) {
@@ -370,8 +387,12 @@ var VelaGitHub = {
         Services.obs.addObserver(this._stateObserver, "vela-github:logout");
       }
       await this._loadToken();
+      dump("VELA_GH init token=" + (this._token ? "restored" : "none") + "\n");
       if (this._token) {
-        await this.refreshProfile();
+        // 拉资料失败（网络）不阻断恢复：令牌已入库，账号信息用到时再取
+        await this.refreshProfile().catch(ex =>
+          Cu.reportError("VelaGitHub init profile: " + ex)
+        );
         this._addBookmarkObserver();
         this._startPeriodicSync();
         Services.obs.notifyObservers(null, "vela-github:login");
@@ -383,6 +404,8 @@ var VelaGitHub = {
       }
     } catch (ex) {
       Cu.reportError("VelaGitHub init: " + ex);
+    } finally {
+      this._updateMenu();
     }
     if (Services.env.get("VELA_SELFTEST") == "1") {
       setTimeout(() => this._selfTest(), 0);
@@ -716,7 +739,12 @@ var VelaGitHub = {
     (async () => {
       if (kind == "login") {
         if (this.status.loggedIn) {
-          this._notify("已登录 GitHub：" + this.status.name);
+          this._showInfoBar(
+            "已登录 GitHub：" +
+              (this.status.name || "账号") +
+              "，无需重复登录。点\"立即同步收藏\"可手动同步。"
+          );
+          this._updateMenu();
           return;
         }
         // 授权码 UI（剪贴板+通知栏）由 beginLogin 内部呈现
