@@ -1,0 +1,104 @@
+# Vela 发布构建：macOS DMG + Windows zip，自动挂 GitHub Release
+# 触发：推送 v* 标签（正式发布）或手动 workflow_dispatch
+# 注意：私有仓 Actions 计费 macOS=10x/Windows=2x，一次双平台约 2000+ 计费分钟；
+#       仓库转 public 后标准 runner 免费。日常 push 不触发，避免烧额度。
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      build_mac:
+        description: "构建 macOS"
+        type: boolean
+        default: true
+      build_win:
+        description: "构建 Windows（约 3-4 小时，可能贴近 6 小时上限）"
+        type: boolean
+        default: true
+
+jobs:
+  build-mac:
+    if: github.event_name == 'push' || inputs.build_mac
+    runs-on: macos-14
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: vela }
+      - name: 环境准备（源码+l10n+overlay+bootstrap）
+        shell: bash
+        run: vela/scripts/ci/setup-mac.sh
+      - name: 构建 + DMG
+        shell: bash
+        run: vela/scripts/ci/build-mac.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: |
+            vela/Vela-*-macOS-arm64.dmg
+            vela/Vela-zh-CN-langpack.xpi
+          if-no-files-found: error
+
+  build-win:
+    if: github.event_name == 'push' || inputs.build_win
+    runs-on: windows-2022
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: vela }
+      - name: 安装 MozillaBuild
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe" -OutFile C:\mbsetup.exe
+          Start-Process C:\mbsetup.exe -ArgumentList "/S" -Wait
+      - name: 源码+l10n+overlay（git-bash）
+        shell: bash
+        run: vela/scripts/ci/setup-win.sh
+      - name: 构建（MozillaBuild 环境，约 3-4 小时）
+        shell: cmd
+        run: |
+          call C:\mozillabuild\start-shell.bat
+          cd /d D:\a\vela\vela-src
+          mach build
+          mach package
+      - name: 收集产物
+        shell: pwsh
+        run: |
+          $obj = (Get-ChildItem "D:\a\vela\vela-src\obj-*" | Select-Object -First 1).FullName
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          Copy-Item "$obj\dist\install\sea\target.installer.exe" "artifact\Vela-Windows-x64-installer.exe" -ErrorAction SilentlyContinue
+          Copy-Item "$obj\dist\target.zip" "artifact\Vela-Windows-x64.zip" -ErrorAction SilentlyContinue
+          Get-ChildItem artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: artifact/*
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [build-mac, build-win]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+      - name: 发布到 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" --title "Vela ${{ github.ref_name }}" --generate-notes
+          gh release upload "${{ github.ref_name }}" artifacts/*/* --clobber
+
+  release-mac-only:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [build-mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+      - name: 上传为 workflow 工件（手动触发不自动建 Release）
+        run: echo "artifacts 已在上方 upload-artifact，可手动下载"
