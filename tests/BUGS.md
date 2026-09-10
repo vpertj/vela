@@ -33,3 +33,11 @@
 
 ## NOT-A-BUG
 - 启动 stderr 出现 g.alicdn.com 脚本 NS_ERROR_FAILURE：远程网页自身反爬脚本报错，非产品缺陷。
+
+## BUG-006 [P1][品牌] 防护面板/设置安全卡/错误页仍有狐狸与紫盾插画
+- 现象：①站点信息防护面板"Vela 正在防护"卡片=狐狸抱盾（trustpanel-graphic-enabled.svg）；②设置页隐私与安全"正在防护"卡=紫盾橙勾（toolkit illustrations shield-check.svg/shield-alert.svg）；③无法连接/安全错误页=狐狸（no-connection.svg/security-error.svg）。
+- 修复：全部重绘为 Vela 风格——防护面板三态（靛青渐变盾+白帆/琥珀/灰）、shield-check/alert（渐变盾+帆+对勾/警示圈）、no-connection（断线帆船+波浪+禁止圈）、security-error（灰盾断链）。截图/渲染验证通过。
+- 状态：**fixed**
+
+## NOT-A-BUG
+- 启动 stderr 出现 g.alicdn.com 脚本 NS_ERROR_FAILURE：远程网页自身反爬脚本报错，非产品缺陷。

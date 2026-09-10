@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<!-- Vela：安全错误页插画（原狐狸 → 灰盾+断裂锁链意象） -->
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140" fill="none">
+  <rect x="30" y="58" width="80" height="60" rx="14" fill="#8E95A1"/>
+  <path d="M48 58 V42 C48 28 58 18 70 18 C82 18 92 28 92 42 V58" stroke="#8E95A1" stroke-width="10"/>
+  <path d="M70 82 L70 96" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <path d="M45 12 L60 26 M60 12 L45 26" stroke="#E8930C" stroke-width="7" stroke-linecap="round"/>
+</svg>

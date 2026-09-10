@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<!-- Vela：防护面板插画（原狐狸 → 靛青渐变盾+白帆，青色方块=已拦截跟踪器） -->
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="none">
+  <defs>
+    <linearGradient id="vg" x1="20" y1="10" x2="80" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B82F0"/>
+      <stop offset="1" stop-color="#3563E9"/>
+    </linearGradient>
+  </defs>
+  <rect x="84" y="26" width="9" height="9" rx="2.5" fill="#6E8FF5" opacity=".85"/>
+  <rect x="9" y="42" width="8" height="8" rx="2.5" fill="#A9BFF9" opacity=".9"/>
+  <rect x="84" y="62" width="7" height="7" rx="2.5" fill="#C7D6FB" opacity=".85"/>
+  <rect x="14" y="16" width="6" height="6" rx="2" fill="#C7D6FB" opacity=".7"/>
+  <path d="M50 6 C58 12 68 15 80 16 V44 C80 66 68 80 50 90 C32 80 20 66 20 44 V16 C32 15 42 12 50 6 Z" fill="url(#vg)"/>
+  <path d="M49 24 L66 54 L44 54 Z" fill="#FFFFFF"/>
+  <path d="M42 52 L34 66" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M32 60 H52" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+</svg>

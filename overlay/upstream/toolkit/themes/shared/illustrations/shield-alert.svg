@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<!-- Vela：安全状态警告卡插画（琥珀渐变盾+白帆+警示圈） -->
+<svg xmlns="http://www.w3.org/2000/svg" width="152" height="152" viewBox="0 0 152 152" fill="none">
+  <defs>
+    <linearGradient id="vsa" x1="30" y1="16" x2="122" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7B84B"/>
+      <stop offset="1" stop-color="#E8930C"/>
+    </linearGradient>
+  </defs>
+  <path d="M76 14 C86 21 99 25 114 26 V66 C114 96 98 114 76 126 C54 114 38 96 38 66 V26 C53 25 66 21 76 14 Z" fill="url(#vsa)"/>
+  <path d="M76 44 V80" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="76" cy="99" r="6.5" fill="#FFFFFF"/>
+  <circle cx="118" cy="110" r="24" fill="#E8930C" stroke="#FFFFFF" stroke-width="5"/>
+  <path d="M118 99 V112 M118 120.5 V121" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+</svg>
