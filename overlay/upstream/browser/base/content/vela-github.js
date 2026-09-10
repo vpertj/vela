@@ -38,24 +38,60 @@ var VelaGitHub = {
   },
 
   /** 发起设备流登录：打开 github.com/login/device，返回 { userCode, verificationUri } */
+  _loginInFlight: false,
+
   async beginLogin() {
-    const res = await fetch("https://github.com/login/device/code", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        client_id: this.clientID,
-        scope: "repo read:user",
-      }),
-      // 大陆网络 github 可能长时间挂起：15s 超时给明确报错，不做无声等待
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) {
-      throw new Error("device code request failed: " + res.status);
+    if (this._loginInFlight) {
+      dump("VELA_GH login already in flight, ignore\n");
+      return null;
     }
-    const d = await res.json();
+    this._loginInFlight = true;
+    try {
+      return await this._beginLoginInner();
+    } finally {
+      this._loginInFlight = false;
+    }
+  },
+
+  async _beginLoginInner() {
+    // 大陆网络 github 不稳：3 次重试，每次 15s 超时，全部失败才报错
+    let d = null;
+    let lastErr = null;
+    for (let attempt = 0; attempt < 3 && !d; attempt++) {
+      if (attempt) {
+        await new Promise(ok => setTimeout(ok, 1200));
+      }
+      try {
+        dump("VELA_GH device code attempt " + (attempt + 1) + "\n");
+        const res = await fetch("https://github.com/login/device/code", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            client_id: this.clientID,
+            scope: "repo read:user",
+          }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status);
+        }
+        d = await res.json();
+      } catch (ex) {
+        if (ex && ex.name == "AbortError") {
+          lastErr = new Error("连接 GitHub 超时（15 秒）");
+          dump("VELA_GH attempt " + (attempt + 1) + " timeout\n");
+        } else {
+          lastErr = ex;
+          dump("VELA_GH attempt " + (attempt + 1) + " failed: " + ex + "\n");
+        }
+      }
+    }
+    if (!d) {
+      throw lastErr || new Error("无法连接 GitHub");
+    }
     dump("VELA_GH device code ready: " + d.user_code + "\n");
     // 打开授权页（用本浏览器）
     openTrustedLinkIn(d.verification_uri, "tab");
@@ -696,7 +732,26 @@ var VelaGitHub = {
         await this.logout();
         this._notify("已退出 GitHub 登录");
       }
-    })().catch(ex => this._notify("操作失败：" + ex.message));
+    })().catch(ex => {
+      dump("VELA_GH action failed: " + ex + "\n");
+      this._notify("操作失败：" + ex.message);
+      try {
+        const nb = gBrowser.getNotificationBox(gBrowser.selectedBrowser);
+        nb.appendNotification(
+          "vela-github-error",
+          {
+            label: "GitHub：" + ex.message,
+            priority: nb.PRIORITY_WARNING_HIGH,
+          },
+          [
+            {
+              label: "重试登录",
+              callback: () => this.toolbarAction("login"),
+            },
+          ]
+        );
+      } catch (ex2) {}
+    });
   },
   /** 下拉菜单项编程式绑定（内联 oncommand 在 CUI 迁移节点上不可靠） */
   bindToolbarMenu() {
