@@ -24,3 +24,12 @@
 
 ## NOT-A-BUG
 - 启动 stderr 出现 g.alicdn.com 脚本 NS_ERROR_FAILURE：远程网页自身反爬脚本报错，非产品缺陷。
+
+## BUG-005 [P1][品牌] App 菜单"设为主浏览器"卡片仍是狐狸插画
+- 现象：应用菜单顶部推广卡使用 fox-with-checkmark.svg（狐狸+绿勾）。
+- 修复：重绘为靛青 Vela 帆徽章+绿色对勾（沿用 kit-* 插画风格），收编 overlay/upstream/browser/components/asrouter/content/assets/。截图验证通过。
+- 状态：**fixed**
+- 残余：about:welcome 首启页与 newtab data assets 仍有 br-*/fox-doodle* 狐狸资产（仅新 profile 首启/特定消息可见），列 P2 待统一替换。
+
+## NOT-A-BUG
+- 启动 stderr 出现 g.alicdn.com 脚本 NS_ERROR_FAILURE：远程网页自身反爬脚本报错，非产品缺陷。

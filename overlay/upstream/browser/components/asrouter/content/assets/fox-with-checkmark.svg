@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<!-- Vela：应用菜单"设为主浏览器"卡片插画（原狐狸+对勾 → 靛青帆+对勾） -->
+<svg width="106" height="97" viewBox="0 0 106 97" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="2" width="74" height="74" rx="18" fill="#3563E9"/>
+  <path d="M41 14 L66 60 L36 60 Z" fill="#FFFFFF"/>
+  <path d="M34 56 L26 74" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+  <path d="M20 66 H48" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M28 78 H52" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="82" cy="70" r="19" fill="#2DA44E"/>
+  <circle cx="82" cy="70" r="19" stroke="#FFFFFF" stroke-width="3"/>
+  <path d="M73 70 L80 77 L92 63" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
