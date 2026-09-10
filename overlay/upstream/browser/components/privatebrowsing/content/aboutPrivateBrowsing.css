@@ -1,0 +1,13 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+html.private .showNormal,
+html.normal .showPrivate {
+  display: none !important;
+}
+
+/* Vela：移除 Focus/VPN 推广位（BUG-004）——JS 与该区深度耦合，CSS 强隐藏最稳 */
+.promo {
+  display: none !important;
+}

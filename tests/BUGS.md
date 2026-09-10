@@ -14,13 +14,13 @@
 
 ## BUG-003 [P2][设置页] "外观焕新，设置依旧。"新手提示条常驻
 - 现象：设置页顶部出现上游 redesign 提示条（有"知道了"可关），信息价值低。
-- 处置建议：可直接移除（同 helpButton 做法）。
-- 状态：open
+- 修复：SettingPaneManager.shouldShowRedesignPromo 恒 false（收编 overlay）。实例验证：设置页无提示条。
+- 状态：**fixed**
 
 ## BUG-004 [P2][隐私窗口] 隐私页宣传区出现"移动端更强大的隐私保护/下载 Vela Focus"
 - 现象：桌面浏览器的隐私起始页推广移动端产品 Vela Focus，场景不符。
-- 处置建议：隐藏该 promo 区块或换成本厂文案。
-- 状态：open
+- 修复：aboutPrivateBrowsing.css 收编并 `.promo{display:none!important}`（JS 与该区深度耦合，CSS 隐藏最稳）。实例验证：隐私窗口仅剩隐私说明，无 Focus 宣传。
+- 状态：**fixed**
 
 ## NOT-A-BUG
 - 启动 stderr 出现 g.alicdn.com 脚本 NS_ERROR_FAILURE：远程网页自身反爬脚本报错，非产品缺陷。
